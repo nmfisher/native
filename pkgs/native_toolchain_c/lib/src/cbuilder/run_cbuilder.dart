@@ -23,6 +23,7 @@ class RunCBuilder {
   final Logger? logger;
   final List<Uri> sources;
   final List<Uri> includes;
+  final List<String> linkWith;
   final Uri? executable;
   final Uri? dynamicLibrary;
   final Uri? staticLibrary;
@@ -47,6 +48,7 @@ class RunCBuilder {
     this.logger,
     this.sources = const [],
     this.includes = const [],
+    this.linkWith = const [],
     this.executable,
     this.dynamicLibrary,
     this.staticLibrary,
@@ -271,7 +273,6 @@ class RunCBuilder {
     final vcvarsArgs = _resolver.toolchainEnvironmentScriptArguments();
     final environment =
         await environmentFromBatchFile(vcvars, arguments: vcvarsArgs ?? []);
-
     final isStaticLib = staticLibrary != null;
     Uri? archiver_;
     if (isStaticLib) {
@@ -295,6 +296,7 @@ class RunCBuilder {
         if (dynamicLibrary != null) ...[
           ...sources.map((e) => e.toFilePath()),
           '/link',
+          ...linkWith,
           '/DLL',
           '/out:${outDir.resolveUri(dynamicLibrary!).toFilePath()}',
         ],

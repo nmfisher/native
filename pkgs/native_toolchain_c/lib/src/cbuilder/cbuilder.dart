@@ -63,6 +63,9 @@ class CBuilder implements Builder {
   /// Used to output the [BuildOutput.dependencies].
   final List<String> includes;
 
+  /// Libraries to link with the target (Windows/DLL only)
+  final List<String> linkWith;
+
   /// The dart files involved in building this artifact.
   ///
   /// Resolved against [BuildConfig.packageRoot].
@@ -159,6 +162,7 @@ class CBuilder implements Builder {
     @visibleForTesting this.installName,
     this.flags = const [],
     this.defines = const {},
+    this.linkWith = const [],
     this.buildModeDefine = true,
     this.ndebugDefine = true,
     this.pic = true,
@@ -172,6 +176,7 @@ class CBuilder implements Builder {
     required this.name,
     this.sources = const [],
     this.includes = const [],
+    this.linkWith = const [],
     required this.dartBuildFiles,
     this.flags = const [],
     this.defines = const {},
@@ -208,6 +213,7 @@ class CBuilder implements Builder {
       for (final source in this.sources)
         packageRoot.resolveUri(Uri.file(source)),
     ];
+    
     final includes = [
       for (final directory in this.includes)
         packageRoot.resolveUri(Uri.file(directory)),
@@ -220,6 +226,7 @@ class CBuilder implements Builder {
         buildConfig: config,
         logger: logger,
         sources: sources,
+        linkWith: this.linkWith,
         includes: includes,
         dynamicLibrary: _type == _CBuilderType.library &&
                 linkMode == DynamicLoadingBundled()
