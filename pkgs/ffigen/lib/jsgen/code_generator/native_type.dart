@@ -26,30 +26,29 @@ enum SupportedNativeType {
 /// Represents a primitive native type, such as float.
 class NativeType extends Type {
   static const _primitives = <SupportedNativeType, NativeType>{
-    SupportedNativeType.voidType: NativeType._('void', 'void', null),
-    SupportedNativeType.char: NativeType._('int', 'char', '0'),
-    SupportedNativeType.int8: NativeType._('int', 'int8_t', '0'),
-    SupportedNativeType.int16: NativeType._('int', 'int16_t', '0'),
-    SupportedNativeType.int32: NativeType._('int', 'int32_t', '0'),
-    SupportedNativeType.int64: NativeType._('int', 'int64_t', '0'),
-    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', '0'),
-    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', '0'),
-    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', '0'),
-    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', '0'),
-    SupportedNativeType.float: NativeType._('double', 'float', '0.0'),
-    SupportedNativeType.double:
-        NativeType._('double', 'double', '0.0'),
-    SupportedNativeType.intPtr: NativeType._('int', 'intptr_t', '0'),
-    SupportedNativeType.uintPtr:
-        NativeType._('int', 'uintptr_t', '0'),
+    SupportedNativeType.voidType: NativeType._('void', 'void', 0, 'null'),
+    SupportedNativeType.char: NativeType._('int', 'char', 1, 'u8'),
+    SupportedNativeType.int8: NativeType._('int', 'int8_t', 8, 'i8'),
+    SupportedNativeType.int16: NativeType._('int', 'int16_t', 16, 'i16'),
+    SupportedNativeType.int32: NativeType._('int', 'int32_t', 32, 'i32'),
+    SupportedNativeType.int64: NativeType._('int', 'int64_t', 64, 'i64'),
+    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 8, 'ui8'),
+    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 16, 'i16'),
+    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 32, 'i32'),
+    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 64, 'i64'),
+    SupportedNativeType.float: NativeType._('double', 'float', 32, 'float'),
+    SupportedNativeType.double: NativeType._('double', 'double', 64, 'double'),
+    SupportedNativeType.intPtr: NativeType._('int', 'intptr_t', 64, '*'),
+    SupportedNativeType.uintPtr: NativeType._('int', 'uintptr_t', 64, '*'),
   };
 
   final String _dartType;
   final String _nativeType;
-  final String? _defaultValue;
+  final int sizeInBytes;
+  final String llvmType;
 
-  const NativeType._(
-       this._dartType, this._nativeType, this._defaultValue);
+
+  const NativeType._(this._dartType, this._nativeType, this.sizeInBytes, this.llvmType);
 
   factory NativeType(SupportedNativeType type) => _primitives[type]!;
 
@@ -65,12 +64,11 @@ class NativeType extends Type {
   @override
   String cacheKey() => _dartType;
 
-  @override
-  String? getDefaultValue(Writer w) => _defaultValue;
+  
 }
 
 class BooleanType extends NativeType {
-  const BooleanType._() : super._('bool', 'BOOL', 'false');
+  const BooleanType._() : super._('bool', 'BOOL', 1, 'i8');
   static const _boolean = BooleanType._();
   factory BooleanType() => _boolean;
 

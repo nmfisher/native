@@ -226,4 +226,6 @@ class Member {
     required this.type,
     this.dartDoc,
   }) : originalName = originalName ?? name;
+
+  
 }

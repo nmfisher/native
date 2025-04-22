@@ -385,4 +385,12 @@ $blockName $fnName($blockName block) NS_RETURNS_RETAINED {
   @override
   String toString() =>
       '($returnType (^)(${params.map((p) => p.type.toString()).join(', ')}))';
+      
+        @override
+        // TODO: implement llvmType
+        String get llvmType => throw UnimplementedError();
+      
+        @override
+        // TODO: implement sizeInBytes
+        int get sizeInBytes => throw UnimplementedError();
 }

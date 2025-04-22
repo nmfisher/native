@@ -86,4 +86,12 @@ class ObjCNullable extends Type {
 
   @override
   String cacheKey() => '${child.cacheKey()}?';
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }

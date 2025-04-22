@@ -104,6 +104,14 @@ class FunctionType extends Type {
       );
     }
   }
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
 
 /// Represents a NativeFunction<Function>.
@@ -143,4 +151,12 @@ class NativeFunc extends Type {
 
   @override
   String cacheKey() => 'NatFn(${_type.cacheKey()})';
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }

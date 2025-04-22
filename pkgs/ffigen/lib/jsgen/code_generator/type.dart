@@ -13,6 +13,9 @@ import 'writer.dart';
 abstract class Type {
   const Type();
 
+  String get llvmType;
+  int get sizeInBytes;
+
   /// Get all dependencies of this type and save them in [dependencies].
   void addDependencies(Set<Binding> dependencies) {}
 
@@ -60,7 +63,6 @@ abstract class Type {
   /// argument, the syntax is `int (^arg)(int)`, where arg is the [varName].
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
-
 
   /// Returns whether the dart type and FFI dart type string are same.
   bool get sameDartAndFfiDartType => true;
@@ -144,13 +146,15 @@ abstract class BindingType extends NoLookUpBinding implements Type {
   bool get isIncompleteCompound => false;
 
   @override
-  String getFfiDartType(Writer w) => throw UnsupportedError('No mapping for type: $this');
+  String getFfiDartType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
 
   @override
   String getDartType(Writer w) => getFfiDartType(w);
 
   @override
-  String getObjCBlockSignatureType(Writer w) => throw UnsupportedError('No mapping for type: $this');
+  String getObjCBlockSignatureType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
 
   @override
   String getNativeType({String varName = ''}) =>
@@ -198,5 +202,12 @@ class UnimplementedType extends Type {
 
   @override
   String toString() => '(Unimplemented: $reason)';
-
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }

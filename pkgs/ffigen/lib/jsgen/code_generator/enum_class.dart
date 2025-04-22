@@ -318,6 +318,14 @@ class EnumClass extends BindingType {
     String? objCEnclosingClass,
   }) =>
       sameDartAndFfiDartType ? value : '${getDartType(w)}.fromValue($value)';
+      
+        @override
+        // TODO: implement llvmType
+        String get llvmType => throw UnimplementedError();
+      
+        @override
+        // TODO: implement sizeInBytes
+        int get sizeInBytes => throw UnimplementedError();
 }
 
 /// Represents a single value in an enum.

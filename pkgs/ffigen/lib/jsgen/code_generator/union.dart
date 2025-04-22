@@ -39,4 +39,12 @@ class Union extends Compound {
     super.objCBuiltInFunctions,
     super.nativeType,
   }) : super(compoundType: CompoundType.union);
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }

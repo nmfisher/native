@@ -60,6 +60,14 @@ class ImportedType extends Type {
 
   @override
   String? getDefaultValue(Writer w) => defaultValue;
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
 
 /// An unchecked type similar to [ImportedType] which exists in the generated
@@ -76,6 +84,14 @@ class SelfImportedType extends Type {
 
   @override
   String toString() => cType;
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
 
 final pkgWebImport = LibraryImport('pkg_web', 'package:web/web.dart');

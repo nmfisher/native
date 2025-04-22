@@ -407,4 +407,12 @@ class ObjCInterface extends BindingType with ObjCMethods {
     }
     return type.getDartType(w);
   }
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }

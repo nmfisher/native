@@ -1,6 +1,7 @@
 // Copyright (c) 2020, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import 'dart:math';
 
 import '../code_generator.dart';
 import '../config_provider/config_types.dart';
@@ -106,6 +107,28 @@ class Func extends LookUpBinding {
       p.name = paramNamer.makeUnique(p.name);
     }
 
+    // if the function accepts a struct argument by value,
+    // we need to call stackAlloc to allocate memory for the struct and
+    // pass the pointer to this struct instead of the value itself.
+
+    for (final param in functionType.parameters) {
+      if (param.type is Struct) {
+        final paramStructType = param.type as Struct;
+        int paramStructSize = 0;
+        for (final member in paramStructType.members) {}
+        var argPtrName = '${param.name}_structPtr';
+        // for()
+        // var structSize =
+        // var allocateParamStruct = '''
+        //   final $argPtrName  = stackAlloc($fieldSize);
+        //   setValue(${structName}_${field.name}, param.arg, $llvmType)
+        //   ''';
+      }
+    }
+
+    // if the function returns a struct by value,
+    // we need to transform the invocation to allocate memory
+    // for the return type struct, and pass a pointer to this struct as the first parameter
     if (functionType.returnType is Struct) {
       final originalReturnType = functionType.returnType;
 
@@ -130,46 +153,27 @@ class Func extends LookUpBinding {
       late String jsToDart;
 
       for (var field in structType.members) {
-        int fieldSize = 0;
-        if (field.type == NativeType(SupportedNativeType.float)) {
-          fieldSize = 4;
-          llvmType = 'float';
+        if (field.type is! NativeType && field.type is! PointerType) {
+          throw Exception('Unsupported : ${field.type}');
+        }
+
+        late String jsToDart;
+        final dartType = field.type.getDartType(w);
+        if (dartType == 'double') {
           jsToDart = '.toDartDouble';
-        } else if (field.type == NativeType(SupportedNativeType.double)) {
-          fieldSize = 8;
-          llvmType = 'double';
-          jsToDart = '.toDartDouble';
-        } else if (field.type == NativeType(SupportedNativeType.char)) {
-          fieldSize = 1;
-          llvmType = 'char';
-          jsToDart = '.toDartInt';
-        } else if (field.type == NativeType(SupportedNativeType.uint8)) {
-          fieldSize = 1;
-          jsToDart = '.toDartInt';
-        } else if (field.type == NativeType(SupportedNativeType.int32)) {
-          fieldSize = 4;
-          llvmType = 'i32';
-          jsToDart = '.toDartInt';
-        } else if (field.type == NativeType(SupportedNativeType.intPtr) ||
-            field.type == NativeType(SupportedNativeType.int64)) {
-          throw Exception("CHECK ME - 64bit int on JS?");
-          // structSize += 8;
-          llvmType = 'i64';
+        } else if (dartType == 'int') {
           jsToDart = '.toDartInt';
         } else if (field.type is PointerType) {
-          fieldSize = 8;
-          llvmType = 'i64';
-          jsToDart = ' as ${field.type.getDartType(w)}';
-        } else {
-          throw Exception("UNSUPPORTED : ${field.type}");
+          final ptrType = field.type as PointerType;
+          final inner = ptrType.child.getDartType(w);
+          jsToDart = '.toDartInt as Pointer<$inner>';
         }
-        structSize += fieldSize;
+        structSize += field.type.sizeInBytes;
 
         fieldAllocators +=
-            '''final ${structName}_${field.name} = getValue(out, '$llvmType')$jsToDart;\n''';
+            '''final ${structName}_${field.name} = getValue(out, '${field.type.llvmType}')$jsToDart;\n''';
 
-        // '''final ${structName}_${field.name} = stackAlloc<${field.type.getDartType(w)}>($fieldSize);''';
-        fieldConstructorArgs.add("${structName}_${field.name}");
+        fieldConstructorArgs.add('${structName}_${field.name}');
       }
 
       s.write('''external void _$enclosingFuncName($argDeclString);''');

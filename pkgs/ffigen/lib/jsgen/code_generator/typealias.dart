@@ -201,6 +201,14 @@ class Typealias extends BindingType {
   // [usr] is unique for specific symbols.
   @override
   int get hashCode => usr.hashCode;
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
 
 /// Objective C's instancetype.

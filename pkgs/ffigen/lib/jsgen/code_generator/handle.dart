@@ -25,4 +25,12 @@ class HandleType extends Type {
 
   @override
   String toString() => 'Handle';
+  
+  @override
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
+  @override
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
