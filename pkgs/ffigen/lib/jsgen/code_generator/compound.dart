@@ -138,9 +138,10 @@ abstract class Compound extends BindingType {
     final dartClassName = isStruct ? 'Struct' : 'Union';
     // Write class declaration.
     s.write('final class $enclosingClassName extends ');
-    s.write('${w.ffiLibraryPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
+    s.write('${w.selfImportPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
     const depth = '  ';
     for (final m in members) {
+      
       m.name = localUniqueNamer.makeUnique(m.name);
       if (m.dartDoc != null) {
         s.write('$depth/// ');
@@ -152,13 +153,10 @@ abstract class Compound extends BindingType {
         s.write('${depth}external ${_getInlineArrayTypeString(m.type, w)} ');
         s.write('${m.name};\n\n');
       } else {
-        if (!m.type.sameFfiDartAndCType) {
-          s.write('$depth@${m.type.getCType(w)}()\n');
-        }
         final memberName =
             m.type.sameDartAndFfiDartType ? m.name : '${m.name}AsInt';
         s.write(
-            '${depth}external ${m.type.getFfiDartType(w)} $memberName;\n\n');
+            'final ${m.type.getFfiDartType(w)} $memberName;\n\n');
       }
       if (m.type case EnumClass(:final generateAsInt) when !generateAsInt) {
         final enumName = m.type.getDartType(w);

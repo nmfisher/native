@@ -32,7 +32,7 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
   if (shouldIncludeFunc(decl)) {
     _logger.fine('++++ Adding Function: ${cursor.completeStringRepr()}');
 
-    final returnType = cursor.returnType().toCodeGenType();
+    var returnType = cursor.returnType().toCodeGenType();
 
     final parameters = <Parameter>[];
     var incompleteStructParameter = false;
@@ -75,6 +75,16 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
           "Skipped Function '$funcName', inline functions are not supported.");
       // Returning empty so that [addToBindings] function excludes this.
       return funcs;
+    }
+
+    if (returnType is Struct) {
+      var originalReturnType = returnType;
+      var outType = PointerType(originalReturnType);
+      returnType = NativeType(SupportedNativeType.voidType);
+      parameters.insert(
+          0,
+          Parameter(
+              name: "out", type: outType, objCConsumed: false));
     }
 
     if (returnType.isIncompleteCompound || incompleteStructParameter) {
@@ -132,7 +142,6 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
         exposeFunctionTypedefs: config.shouldExposeFunctionTypedef(decl),
         isLeaf: config.isLeafFunction(decl),
         objCReturnsRetained: objCReturnsRetained,
-        ffiNativeConfig: config.ffiNativeConfig,
       ));
     }
     bindingsIndex.addFuncToSeen(funcUsr, funcs.last);

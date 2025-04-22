@@ -49,7 +49,6 @@ class ImportedType extends Type {
   @override
   String getCType(Writer w) {
     w.markImportUsed(libraryImport);
-    print("marking ${libraryImport.prefix} as used (${libraryImport._importPath} ${libraryImport.name}");
     return '${libraryImport.prefix}.$cType';
   }
 
@@ -114,7 +113,6 @@ final unsignedShortType =
 final shortType = ImportedType(jsInteropUnsafeImport, 'Short', 'int', 'short', '0');
 final unsignedIntType =
     ImportedType(jsInteropUnsafeImport, 'UnsignedInt', 'int', 'unsigned', '0');
-final intType = ImportedType(jsInteropUnsafeImport, 'Int', 'int', 'int', '0');
 final unsignedLongType =
     ImportedType(jsInteropUnsafeImport, 'UnsignedLong', 'int', 'unsigned long', '0');
 final longType = ImportedType(jsInteropUnsafeImport, 'Long', 'int', 'long', '0');

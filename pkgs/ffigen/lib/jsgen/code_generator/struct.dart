@@ -16,14 +16,11 @@ import 'compound.dart';
 /// ```
 /// The generated dart code is -
 /// ```dart
-/// final class Struct extends ffi.Struct {
-///  @ffi.Int32()
+/// final class Struct extends Struct {
 ///  int a;
 ///
-///  @ffi.Double()
 ///  double b;
 ///
-///  @ffi.Uint8()
 ///  int c;
 ///
 /// }

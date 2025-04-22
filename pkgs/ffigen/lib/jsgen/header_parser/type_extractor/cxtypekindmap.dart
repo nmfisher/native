@@ -14,7 +14,7 @@ Map<String, ImportedType> cxTypeKindToImportedTypes = {
   'unsigned short': unsignedShortType,
   'short': shortType,
   'unsigned int': unsignedIntType,
-  'int': intType,
+  // 'int': intType,
   'unsigned long': unsignedLongType,
   'long': longType,
   'unsigned long long': unsignedLongLongType,

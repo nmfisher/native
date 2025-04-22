@@ -140,6 +140,8 @@ Type getCodeGenType(
       );
     case clang_types.CXTypeKind.CXType_Bool:
       return BooleanType();
+    case clang_types.CXTypeKind.CXType_Int:
+      return NativeType(SupportedNativeType.int32);
     case clang_types.CXTypeKind.CXType_Attributed:
     case clang_types.CXTypeKind.CXType_Unexposed:
       final innerType = getCodeGenType(

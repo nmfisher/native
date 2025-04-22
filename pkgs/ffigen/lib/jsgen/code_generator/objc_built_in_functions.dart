@@ -192,7 +192,6 @@ class ObjCBuiltInFunctions {
       isLeaf: true,
       isInternal: true,
       useNameForLookup: true,
-      ffiNativeConfig: const FfiNativeConfig(enabled: true),
     ));
   }
 

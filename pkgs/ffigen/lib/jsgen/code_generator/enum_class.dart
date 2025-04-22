@@ -60,11 +60,11 @@ class EnumClass extends BindingType {
     super.originalName,
     required super.name,
     super.dartDoc,
-    Type? nativeType,
+    required Type nativeType,
     List<EnumConstant>? enumConstants,
     this.objCBuiltInFunctions,
     this.generateAsInt = false,
-  })  : nativeType = nativeType ?? intType,
+  })  : nativeType = nativeType,
         enumConstants = enumConstants ?? [],
         namer = UniqueNamer({name});
 

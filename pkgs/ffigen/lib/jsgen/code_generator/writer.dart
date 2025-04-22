@@ -69,6 +69,19 @@ class Writer {
     return _pkgWebLibraryPrefix = import.prefix;
   }
 
+  String? _jsInteropLibraryPrefix;
+  String get jsInteropLibraryPrefix {
+    if (_jsInteropLibraryPrefix != null) {
+      return _jsInteropLibraryPrefix!;
+    }
+
+    final import = _usedImports.firstWhere(
+        (element) => element.name == jsInteropImport.name,
+        orElse: () => jsInteropImport);
+    _usedImports.add(import);
+    return _jsInteropLibraryPrefix = import.prefix;
+  }
+
   String? _ffiPkgLibraryPrefix;
   String get ffiPkgLibraryPrefix {
     if (_ffiPkgLibraryPrefix != null) {
@@ -104,7 +117,7 @@ class Writer {
 
   final Set<LibraryImport> _usedImports = {};
 
-  late String _lookupFuncIdentifier;
+  String _lookupFuncIdentifier = "LOOKUP";
   String get lookupFuncIdentifier => _lookupFuncIdentifier;
 
   late String _symbolAddressClassName;
@@ -178,13 +191,6 @@ class Writer {
         );
       }
     }
-
-    /// [_lookupFuncIdentifier] should be unique in top level.
-    _lookupFuncIdentifier = _resolveNameConflict(
-      name: '_lookup',
-      makeUnique: _initialTopLevelUniqueNamer,
-      markUsed: [_initialTopLevelUniqueNamer],
-    );
 
     /// Resolve name conflicts of identifiers used for SymbolAddresses.
     _symbolAddressClassName = _resolveNameConflict(
@@ -292,25 +298,46 @@ class Writer {
       }
       // Write wrapper classs.
 
-      s.write(
-          'extension type $_className(js_interop.JSObject _) implements js_interop.JSObject { ');
-      // Write dylib.
-      // s.write('/// Holds the symbol lookup function.\n');
-      // s.write('final $ffiLibraryPrefix.Pointer<T> Function<T extends '
-      //     '$ffiLibraryPrefix.NativeType>(String symbolName) '
-      //     '$lookupFuncIdentifier;\n');
+      s.write('''
+
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
+
+sealed class Char {}
+
+sealed class Void {}
+
+extension type Pointer<T>(int addr) {
+  Pointer<T> operator +(int offset) => Pointer<T>(addr + offset);
+}
+
+abstract class Struct {
+  final int size;
+
+  Struct(this.size);
+}
+
+
+extension type $_className(JSObject _) implements JSObject { 
+
+  external self.Pointer<T> stackAlloc<T>(int numBytes);
+  external JSAny getValue(self.Pointer addr, String llvmType);
+  external void setValue(self.Pointer addr, JSNumber value, String llvmType);
+
+  external JSString intArrayToString(JSAny ptr);
+  external JSString UTF8ToString(JSAny ptr);
+  external void stringToUTF8(
+      JSString str, JSNumber ptr, JSNumber maxBytesToWrite);
+  external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
+
+  external JSNumber addFunction(JSFunction f, String signature);
+  external void removeFunction(JSNumber f);
+  external JSAny get ALLOC_STACK;
+  external JSAny get HEAPU32;
+  external JSAny get HEAP32;
+
+''');
       s.write('\n');
-      //Write doc comment for wrapper class constructor.
-      // s.write(makeDartDoc('The symbols are looked up in [dynamicLibrary].'));
-      // // Write wrapper class constructor.
-      // s.write('$_className($ffiLibraryPrefix.DynamicLibrary dynamicLibrary): '
-      //     '$lookupFuncIdentifier = dynamicLibrary.lookup;\n\n');
-      // //Write doc comment for wrapper class named constructor.
-      // s.write(makeDartDoc('The symbols are looked up with [lookup].'));
-      // // Write wrapper class named constructor.
-      // s.write('$_className.fromLookup($ffiLibraryPrefix.Pointer<T> '
-      //     'Function<T extends $ffiLibraryPrefix.NativeType>('
-      //     'String symbolName) lookup): $lookupFuncIdentifier = lookup;\n\n');
       for (final b in lookUpBindings) {
         s.write(b.toBindingString(this).string);
       }
@@ -393,9 +420,7 @@ class Writer {
     // Sort bindings alphabetically by USR.
     bindings.sort((a, b) => a.usr.compareTo(b.usr));
 
-    final usesFfiNative = bindings
-        .whereType<Func>()
-        .any((element) => element.ffiNativeConfig.enabled);
+    final usesFfiNative = true;
 
     return {
       strings.formatVersion: strings.symbolFileFormatVersion,

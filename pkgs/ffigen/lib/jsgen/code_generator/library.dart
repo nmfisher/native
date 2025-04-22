@@ -73,7 +73,6 @@ class Library {
 
     for (final binding in codeGenBindings.whereType<LookUpBinding>()) {
       final nativeConfigForBinding = switch (binding) {
-        Func() => binding.ffiNativeConfig,
         Global() => binding.nativeConfig,
         _ => null,
       };
