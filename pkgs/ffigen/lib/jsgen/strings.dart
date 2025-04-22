@@ -176,7 +176,7 @@ const symbolFilesImport = 'symbol-files';
 const importPath = 'import-path';
 
 final predefinedLibraryImports = {
-  packageWebImport.name: packageWebImport,
+  pkgWebImport.name: pkgWebImport,
   jsInteropImport.name: jsInteropImport,
   jsInteropUnsafeImport.name: jsInteropUnsafeImport
 };

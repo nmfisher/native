@@ -10,9 +10,9 @@ import 'package:logging/logging.dart';
 import 'package:package_config/package_config.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
-import '../../ffigen.dart';
+import '../../jsgen.dart';
 
-final _logger = Logger('ffigen.ffigen');
+final _logger = Logger('jsgen.jsgen');
 
 const compilerOpts = 'compiler-opts';
 const ignoreSourceErrors = 'ignore-source-errors';
@@ -21,7 +21,7 @@ const conf = 'config';
 const help = 'help';
 const verbose = 'verbose';
 const pubspecName = 'pubspec.yaml';
-const configKey = 'ffigen';
+const configKey = 'jsgen';
 const logAll = 'all';
 const logFine = 'fine';
 const logInfo = 'info';
@@ -32,7 +32,7 @@ Future<void> main(List<String> args) async {
   // Parses the cmd args. This will print usage and exit if --help was passed.
   final argResult = getArgResults(args);
 
-  final ffigen = FfiGen(logLevel: _parseLogLevel(argResult));
+  final jsgen = JSGen(logLevel: _parseLogLevel(argResult));
 
   // Create a config object.
   Config config;
@@ -43,7 +43,7 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  ffigen.run(config);
+  jsgen.run(config);
 }
 
 Config getConfig(ArgResults result, PackageConfig? packageConfig) {
@@ -115,7 +115,7 @@ ArgResults getArgResults(List<String> args) {
   final parser = ArgParser(allowTrailingOptions: true);
 
   parser.addSeparator(
-      'FFIGEN: Generate dart bindings from C header files\nUsage:');
+      'jsgen: Generate dart bindings from C header files\nUsage:');
   parser.addOption(
     conf,
     help: 'Path to Yaml file containing configurations if not in pubspec.yaml',

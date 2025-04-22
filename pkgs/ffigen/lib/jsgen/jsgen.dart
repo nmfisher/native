@@ -13,8 +13,8 @@ import 'header_parser.dart' show parse;
 final _logger = Logger('ffigen.ffigen');
 final _ansi = Ansi(Ansi.terminalSupportsAnsi);
 
-class FfiGen {
-  FfiGen({Level logLevel = Level.INFO}) {
+class JSGen {
+  JSGen({Level logLevel = Level.INFO}) {
     Logger.root.level = logLevel;
     Logger.root.onRecord.listen((record) {
       final levelStr = '[${record.level.name}]'.padRight(9);
