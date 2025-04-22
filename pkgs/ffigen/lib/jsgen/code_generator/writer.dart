@@ -52,7 +52,7 @@ class Writer {
     final import = _usedImports.firstWhere(
         (element) => element.name == ffiImport.name,
         orElse: () => ffiImport);
-    _usedImports.add(import);
+    // _usedImports.add(import);
     return _ffiLibraryPrefix = import.prefix;
   }
 
@@ -67,6 +67,19 @@ class Writer {
         orElse: () => pkgWebImport);
     _usedImports.add(import);
     return _pkgWebLibraryPrefix = import.prefix;
+  }
+
+  String? _ffiPkgLibraryPrefix;
+  String get ffiPkgLibraryPrefix {
+    if (_ffiPkgLibraryPrefix != null) {
+      return _ffiPkgLibraryPrefix!;
+    }
+
+    final import = _usedImports.firstWhere(
+        (element) => element.name == ffiPkgImport.name,
+        orElse: () => ffiPkgImport);
+    // _usedImports.add(import);
+    return _ffiPkgLibraryPrefix = import.prefix;
   }
 
   String? _objcPkgPrefix;
@@ -278,8 +291,9 @@ class Writer {
         s.write(makeDartDoc(classDocComment!));
       }
       // Write wrapper classs.
-      
-      s.write('extension type $_className(JSObject _) implements JSObject { ');
+
+      s.write(
+          'extension type $_className(js_interop.JSObject _) implements js_interop.JSObject { ');
       // Write dylib.
       // s.write('/// Holds the symbol lookup function.\n');
       // s.write('final $ffiLibraryPrefix.Pointer<T> Function<T extends '
@@ -329,6 +343,7 @@ class Writer {
     // Write neccesary imports.
     for (final lib in _usedImports) {
       final path = lib.importPath(generateForPackageObjectiveC);
+      print("IMPORT PATH $path");
       result.write("import '$path' as ${lib.prefix};\n");
     }
     result.write(s);
