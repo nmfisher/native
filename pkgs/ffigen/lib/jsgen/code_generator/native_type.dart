@@ -28,23 +28,27 @@ class NativeType extends Type {
   static const _primitives = <SupportedNativeType, NativeType>{
     SupportedNativeType.voidType: NativeType._('void', 'void', 0, 'null'),
     SupportedNativeType.char: NativeType._('int', 'char', 1, 'u8'),
-    SupportedNativeType.int8: NativeType._('int', 'int8_t', 8, 'i8'),
-    SupportedNativeType.int16: NativeType._('int', 'int16_t', 16, 'i16'),
-    SupportedNativeType.int32: NativeType._('int', 'int32_t', 32, 'i32'),
-    SupportedNativeType.int64: NativeType._('int', 'int64_t', 64, 'i64'),
-    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 8, 'ui8'),
-    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 16, 'i16'),
-    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 32, 'i32'),
-    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 64, 'i64'),
-    SupportedNativeType.float: NativeType._('double', 'float', 32, 'float'),
-    SupportedNativeType.double: NativeType._('double', 'double', 64, 'double'),
-    SupportedNativeType.intPtr: NativeType._('int', 'intptr_t', 64, '*'),
-    SupportedNativeType.uintPtr: NativeType._('int', 'uintptr_t', 64, '*'),
+    SupportedNativeType.int8: NativeType._('int', 'int8_t', 1, 'i8'),
+    SupportedNativeType.int16: NativeType._('int', 'int16_t', 2, 'i16'),
+    SupportedNativeType.int32: NativeType._('int', 'int32_t', 4, 'i32'),
+    SupportedNativeType.int64: NativeType._('int', 'int64_t', 8, 'i64'),
+    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 1, 'ui8'),
+    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 2, 'i16'),
+    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'i32'),
+    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 8, 'i64'),
+    SupportedNativeType.float: NativeType._('double', 'float', 4, 'float'),
+    SupportedNativeType.double: NativeType._('double', 'double', 8, 'double'),
+    SupportedNativeType.intPtr: NativeType._('int', 'intptr_t', 8, '*'),
+    SupportedNativeType.uintPtr: NativeType._('int', 'uintptr_t', 8, '*'),
   };
 
   final String _dartType;
   final String _nativeType;
+  
+  @override
   final int sizeInBytes;
+  
+  @override
   final String llvmType;
 
 

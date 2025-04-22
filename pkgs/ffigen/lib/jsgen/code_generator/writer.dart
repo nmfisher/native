@@ -296,6 +296,8 @@ sealed class Char {}
 
 sealed class Void {}
 
+sealed class NativeFunction {}
+
 extension type Pointer<T>(int addr) {
   Pointer<T> operator +(int offset) => Pointer<T>(addr + offset);
 }
@@ -303,7 +305,6 @@ extension type Pointer<T>(int addr) {
 abstract class Struct {
   
 }
-
 
 extension type $_className(JSObject _) implements JSObject { 
 
@@ -317,8 +318,8 @@ extension type $_className(JSObject _) implements JSObject {
       JSString str, JSNumber ptr, JSNumber maxBytesToWrite);
   external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
 
-  external JSNumber addFunction(JSFunction f, String signature);
-  external void removeFunction(JSNumber f);
+  external Pointer<NativeFunction> addFunction(JSFunction f, String signature);
+  external void removeFunction(Pointer<NativeFunction> f);
   external JSAny get ALLOC_STACK;
   external JSAny get HEAPU32;
   external JSAny get HEAP32;

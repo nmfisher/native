@@ -96,7 +96,6 @@ class Func extends LookUpBinding {
   @override
   BindingString toBindingString(Writer w) {
     final s = StringBuffer();
-    final enclosingFuncName = name;
 
     if (dartDoc != null) {
       s.write(makeDartDoc(dartDoc!));
@@ -107,22 +106,75 @@ class Func extends LookUpBinding {
       p.name = paramNamer.makeUnique(p.name);
     }
 
-    // if the function accepts a struct argument by value,
-    // we need to call stackAlloc to allocate memory for the struct and
-    // pass the pointer to this struct instead of the value itself.
+    //
+    // we will generate two methods for each native function definition:
+    // 1) an internal interop method that accepts/returns interop argument types
+    // 2) a user-facing method that accepts/returns only Dart types, converting
+    //    to interop types as needed and forwarding to (1)
+    // The methods share the same name, but the interop method is prefixed with
+    // an underscore.
+    //
+    // For arguments and return values that are primitive numeric types
+    // (int/float/double), there is no difference between the interop and the
+    // user-facing method. The signature will be exactly the same (except the
+    // interop method will be marked as [external])
+    //
+    // If the interop method returns a struct by value:
+    // - the first argument to the interop method will be a pointer to
+    //   the struct
+    // - the user-facing method will stack-allocate sufficient memory to
+    //   represent the struct, and pass the pointer to the interop method
+    // - after the interop method has returned, the user-facing method will
+    //   instantiate the generated Dart class that corresponds to the struct,
+    //   using getValue() to retrieve the correct vales.
+    //
+    // If the interop method takes a struct by value as an argument:
+    // - the user-facing method will take, as an argument, the generated Dart
+    //   class corresponding to the struct
+    // - internally, the user-facing method will stack-allocate sufficient
+    //   memory to represent the struct and call setValue to set its member
+    //   values
+    //
+    // If the interop method takes a function pointer as an argument:
+    // - the user-facing method will take, as an argument, a Dart
+    //   function with the matching signature
+    // - internally, the user-facing method will call addFunction to convert the
+    //   Dart function to the correct interop type
+    // - a Finalizer will be used to call removeFunction when the Dart Function
+    //   is garbage-collected. (?)
+    //
+    String interopFunctionName = "_$name";
+    String userFacingFunctionName = name;
+
+    var interopArguments = <Parameter>[];
+    var userFacingArguments = <Parameter>[];
+
+    var structArgumentAllocator = '';
 
     for (final param in functionType.parameters) {
-      if (param.type is Struct) {
-        final paramStructType = param.type as Struct;
-        int paramStructSize = 0;
-        for (final member in paramStructType.members) {}
+      var paramType = param.type;
+
+      if (paramType.baseType is NativeFunc) {
+        var fnType = (paramType.baseType as NativeFunc).type;
+
+        var param = Parameter(type: fnType, objCConsumed: false);
+        dartFunctionArguments.add(param);
+
+        // structArgumentAllocator +=
+        //     '''final $argPtrName = addFunction();\n''';
+      } else if (paramType is Struct) {
         var argPtrName = '${param.name}_structPtr';
-        // for()
-        // var structSize =
-        // var allocateParamStruct = '''
-        //   final $argPtrName  = stackAlloc($fieldSize);
-        //   setValue(${structName}_${field.name}, param.arg, $llvmType)
-        //   ''';
+        var paramMembers = paramType.members;
+
+        structArgumentAllocator +=
+            '''final $argPtrName = stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n''';
+        for (final paramMember in paramMembers) {
+          structArgumentAllocator +=
+              '''setValue($argPtrName, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');''';
+        }
+        dartFunctionArguments.add(param);
+      } else {
+        dartFunctionArguments.add(param);
       }
     }
 
@@ -149,10 +201,8 @@ class Func extends LookUpBinding {
       var structSize = 0;
       var fieldAllocators = '';
       final fieldConstructorArgs = <String>[];
-      late String llvmType;
-      late String jsToDart;
 
-      for (var field in structType.members) {
+      for (final field in structType.members) {
         if (field.type is! NativeType && field.type is! PointerType) {
           throw Exception('Unsupported : ${field.type}');
         }
@@ -176,11 +226,12 @@ class Func extends LookUpBinding {
         fieldConstructorArgs.add('${structName}_${field.name}');
       }
 
-      s.write('''external void _$enclosingFuncName($argDeclString);''');
+      s.write('''external void _$name($argDeclString);''');
       s.write(
-          '''${functionType.returnType.getFfiDartType(w)} $enclosingFuncName($argDeclString) {
+          '''${functionType.returnType.getFfiDartType(w)} $name($argDeclString) {
+          $structArgumentAllocator
           final out = stackAlloc<${originalReturnType.getDartType(w)}>($structSize);
-          _$enclosingFuncName(out, $forwardArgsString);
+          _$name(out, $forwardArgsString);
           $fieldAllocators
 
           return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(',')});
@@ -192,11 +243,12 @@ class Func extends LookUpBinding {
       final forwardArgsString =
           functionType.dartTypeParameters.map((p) => "${p.name},").join('');
 
-      final nativeFuncName = enclosingFuncName;
+      final nativeFuncName = name;
       s.write(
           '''external ${functionType.returnType.getFfiDartType(w)} _$nativeFuncName($argDeclString);''');
       s.write(
           '''${functionType.returnType.getFfiDartType(w)} $nativeFuncName($argDeclString) {
+          $structArgumentAllocator
           return _$nativeFuncName($forwardArgsString);
         }''');
     }

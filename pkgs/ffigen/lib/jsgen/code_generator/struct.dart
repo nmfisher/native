@@ -38,11 +38,16 @@ class Struct extends Compound {
     super.objCBuiltInFunctions,
     super.nativeType,
   }) : super(compoundType: CompoundType.struct);
-  
+
   @override
-  String get llvmType => throw UnimplementedError();
-  
+  String get llvmType => '*';
+
   @override
-  // TODO: implement sizeInBytes
-  int get sizeInBytes => throw UnimplementedError();
+  int get sizeInBytes {
+    int size = 0;
+    for (final member in members) {
+      size += member.type.sizeInBytes;
+    }
+    return size;
+  }
 }

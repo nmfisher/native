@@ -104,11 +104,11 @@ class FunctionType extends Type {
       );
     }
   }
-  
+
   @override
   // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
-  
+
   @override
   // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
@@ -138,24 +138,23 @@ class NativeFunc extends Type {
     final funcType = _type is FunctionType
         ? _type.getFfiDartType(w, writeArgumentNames: writeArgumentNames)
         : _type.getFfiDartType(w);
-    return '${w.ffiLibraryPrefix}.NativeFunction<$funcType>';
+    return '${w.selfImportPrefix}.NativeFunction<$funcType>';
   }
 
   @override
   String getNativeType({String varName = ''}) =>
       _type.getNativeType(varName: varName);
 
-
   @override
   String toString() => 'NativeFunction<${_type.toString()}>';
 
   @override
   String cacheKey() => 'NatFn(${_type.cacheKey()})';
-  
+
   @override
   // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
-  
+
   @override
   // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
