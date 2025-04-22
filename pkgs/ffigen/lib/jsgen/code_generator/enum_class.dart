@@ -275,13 +275,11 @@ class EnumClass extends BindingType {
   }
 
   @override
-  String getCType(Writer w) {
+  String getFfiDartType(Writer w) {
     w.usedEnumCType = true;
-    return nativeType.getCType(w);
+    return nativeType.getFfiDartType(w);
   }
 
-  @override
-  String getFfiDartType(Writer w) => nativeType.getFfiDartType(w);
 
   @override
   String getDartType(Writer w) {
@@ -296,9 +294,6 @@ class EnumClass extends BindingType {
 
   @override
   String getNativeType({String varName = ''}) => '$originalName $varName';
-
-  @override
-  bool get sameFfiDartAndCType => nativeType.sameFfiDartAndCType;
 
   @override
   bool get sameDartAndFfiDartType => generateAsInt;

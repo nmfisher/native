@@ -28,16 +28,12 @@ class PointerType extends Type {
   Type get baseType => child.baseType;
 
   @override
-  String getCType(Writer w) =>
+  String getFfiDartType(Writer w) =>
       '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
 
   @override
   String getNativeType({String varName = ''}) =>
       '${child.getNativeType()}* $varName';
-
-  // Both the C type and the FFI Dart type are 'Pointer<$cType>'.
-  @override
-  bool get sameFfiDartAndCType => true;
 
   @override
   String toString() => '$child*';
@@ -71,12 +67,12 @@ class ConstantArray extends PointerType {
   String cacheKey() => '${child.cacheKey()}[$length]';
 
   @override
-  String getCType(Writer w) {
+  String getFfiDartType(Writer w) {
     if (useArrayType) {
-      return '${w.ffiLibraryPrefix}.Array<${child.getCType(w)}>';
+      return '${w.ffiLibraryPrefix}.Array<${child.getFfiDartType(w)}>';
     }
 
-    return super.getCType(w);
+    return super.getFfiDartType(w);
   }
 }
 
@@ -110,9 +106,6 @@ class ObjCObjectPointer extends PointerType {
 
   @override
   String getNativeType({String varName = ''}) => 'id $varName';
-
-  @override
-  bool get sameDartAndCType => false;
 
   @override
   bool get sameDartAndFfiDartType => false;

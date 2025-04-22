@@ -75,7 +75,7 @@ class Typealias extends BindingType {
     super.isInternal,
   })  : _ffiDartAliasName = genFfiDartType ? 'Dart$name' : null,
         _dartAliasName =
-            (!genFfiDartType && type is! Typealias && !type.sameDartAndCType)
+            (!genFfiDartType && type is! Typealias)
                 ? 'Dart$name'
                 : null,
         super(
@@ -110,7 +110,7 @@ class Typealias extends BindingType {
     if (dartDoc != null) {
       sb.write(makeDartDoc(dartDoc!));
     }
-    sb.write('typedef $name = ${type.getCType(w)};\n');
+    sb.write('typedef $name = ${type.getFfiDartType(w)};\n');
     if (_ffiDartAliasName != null) {
       sb.write('typedef $_ffiDartAliasName = ${type.getFfiDartType(w)};\n');
     }
@@ -128,29 +128,17 @@ class Typealias extends BindingType {
   bool get isIncompleteCompound => type.isIncompleteCompound;
 
   @override
-  String getCType(Writer w) => name;
+  String getFfiDartType(Writer w) => name;
 
   @override
   String getNativeType({String varName = ''}) =>
       type.getNativeType(varName: varName);
 
-  @override
-  String getFfiDartType(Writer w) {
-    if (_ffiDartAliasName != null) {
-      return _ffiDartAliasName!;
-    } else if (type.sameFfiDartAndCType) {
-      return name;
-    } else {
-      return type.getFfiDartType(w);
-    }
-  }
 
   @override
   String getDartType(Writer w) {
     if (_dartAliasName != null) {
       return _dartAliasName!;
-    } else if (type.sameDartAndCType) {
-      return getFfiDartType(w);
     } else {
       return type.getDartType(w);
     }
@@ -160,11 +148,6 @@ class Typealias extends BindingType {
   String getObjCBlockSignatureType(Writer w) =>
       type.getObjCBlockSignatureType(w);
 
-  @override
-  bool get sameFfiDartAndCType => type.sameFfiDartAndCType;
-
-  @override
-  bool get sameDartAndCType => type.sameDartAndCType;
 
   @override
   bool get sameDartAndFfiDartType => type.sameDartAndFfiDartType;

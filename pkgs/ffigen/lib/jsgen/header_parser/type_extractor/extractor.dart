@@ -142,6 +142,13 @@ Type getCodeGenType(
       return BooleanType();
     case clang_types.CXTypeKind.CXType_Int:
       return NativeType(SupportedNativeType.int32);
+    case clang_types.CXTypeKind.CXType_Float:
+      return NativeType(SupportedNativeType.float);
+    case clang_types.CXTypeKind.CXType_Double:
+      return NativeType(SupportedNativeType.double);
+    case clang_types.CXTypeKind.CXType_Char_S:
+    case clang_types.CXTypeKind.CXType_Char_U:
+      return SelfImportedType("Char", "char");
     case clang_types.CXTypeKind.CXType_Attributed:
     case clang_types.CXTypeKind.CXType_Unexposed:
       final innerType = getCodeGenType(

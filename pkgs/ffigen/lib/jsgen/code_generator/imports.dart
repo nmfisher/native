@@ -47,19 +47,13 @@ class ImportedType extends Type {
       [this.defaultValue]);
 
   @override
-  String getCType(Writer w) {
+  String getFfiDartType(Writer w) {
     w.markImportUsed(libraryImport);
     return '${libraryImport.prefix}.$cType';
   }
 
   @override
-  String getFfiDartType(Writer w) => cType == dartType ? getCType(w) : dartType;
-
-  @override
   String getNativeType({String varName = ''}) => '$nativeType $varName';
-
-  @override
-  bool get sameFfiDartAndCType => cType == dartType;
 
   @override
   String toString() => '${libraryImport.name}.$cType';
@@ -78,13 +72,7 @@ class SelfImportedType extends Type {
   SelfImportedType(this.cType, this.dartType, [this.defaultValue]);
 
   @override
-  String getCType(Writer w) => cType;
-
-  @override
-  String getFfiDartType(Writer w) => dartType;
-
-  @override
-  bool get sameFfiDartAndCType => cType == dartType;
+  String getFfiDartType(Writer w) => cType;
 
   @override
   String toString() => cType;
@@ -107,7 +95,7 @@ final unsignedCharType =
     ImportedType(jsInteropUnsafeImport, 'UnsignedChar', 'int', 'unsigned char', '0');
 final signedCharType =
     ImportedType(jsInteropUnsafeImport, 'SignedChar', 'int', 'char', '0');
-final charType = ImportedType(jsInteropUnsafeImport, 'Char', 'int', 'char', '0');
+final charType = SelfImportedType('char', 'Char', 'char');
 final unsignedShortType =
     ImportedType(jsInteropUnsafeImport, 'UnsignedShort', 'int', 'unsigned short', '0');
 final shortType = ImportedType(jsInteropUnsafeImport, 'Short', 'int', 'short', '0');

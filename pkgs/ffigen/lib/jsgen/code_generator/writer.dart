@@ -39,7 +39,7 @@ class Writer {
 
   final List<String> nativeEntryPoints;
 
-  /// Tracks where enumType.getCType is called. Reset everytime [generate] is
+  /// Tracks where enumType.getFfiDartType is called. Reset everytime [generate] is
   /// called.
   bool usedEnumCType = false;
 
@@ -279,17 +279,6 @@ class Writer {
       result.write(makeDoc('ignore_for_file: type=lint'));
     }
 
-    // If there are any @Native bindings, the file needs to have an
-    // `@DefaultAsset` annotation for the symbols to resolve properly. This
-    // avoids duplicating the asset on every element.
-    // Since the annotation goes on a `library;` directive, it needs to appear
-    // before other definitions in the file.
-    // if (ffiNativeBindings.isNotEmpty && nativeAssetId != null) {
-    //   result
-    //     ..writeln("@$ffiLibraryPrefix.DefaultAsset('$nativeAssetId')")
-    //     ..writeln('library;\n');
-    // }
-
     /// Write [lookUpBindings].
     if (lookUpBindings.isNotEmpty) {
       // Write doc comment for wrapper class.
@@ -312,16 +301,14 @@ extension type Pointer<T>(int addr) {
 }
 
 abstract class Struct {
-  final int size;
-
-  Struct(this.size);
+  
 }
 
 
 extension type $_className(JSObject _) implements JSObject { 
 
   external self.Pointer<T> stackAlloc<T>(int numBytes);
-  external JSAny getValue(self.Pointer addr, String llvmType);
+  external JSNumber getValue(self.Pointer addr, String llvmType);
   external void setValue(self.Pointer addr, JSNumber value, String llvmType);
 
   external JSString intArrayToString(JSAny ptr);

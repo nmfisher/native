@@ -101,76 +101,93 @@ abstract class Compound extends BindingType {
       return '${w.ffiLibraryPrefix}.Array<'
           '${_getInlineArrayTypeString(type.child, w)}>';
     }
-    return type.getCType(w);
+    return type.getFfiDartType(w);
   }
 
   bool get _isBuiltIn =>
       objCBuiltInFunctions?.getBuiltInCompoundName(originalName) != null;
 
-  @override
   BindingString toBindingString(Writer w) {
-    final bindingType =
-        isStruct ? BindingStringType.struct : BindingStringType.union;
-    if (_isBuiltIn) {
-      return BindingString(type: bindingType, string: '');
-    }
-
-    final s = StringBuffer();
-    final enclosingClassName = name;
-    if (dartDoc != null) {
-      s.write(makeDartDoc(dartDoc!));
-    }
-
-    /// Adding [enclosingClassName] because dart doesn't allow class member
-    /// to have the same name as the class.
-    final localUniqueNamer = UniqueNamer({enclosingClassName});
-
-    /// Marking type names because dart doesn't allow class member to have the
-    /// same name as a type name used internally.
-    for (final m in members) {
-      localUniqueNamer.markUsed(m.type.getFfiDartType(w));
-    }
-
-    /// Write @Packed(X) annotation if struct is packed.
-    if (isStruct && pack != null) {
-      s.write('@${w.ffiLibraryPrefix}.Packed($pack)\n');
-    }
-    final dartClassName = isStruct ? 'Struct' : 'Union';
-    // Write class declaration.
-    s.write('final class $enclosingClassName extends ');
-    s.write('${w.selfImportPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
-    const depth = '  ';
-    for (final m in members) {
-      
-      m.name = localUniqueNamer.makeUnique(m.name);
-      if (m.dartDoc != null) {
-        s.write('$depth/// ');
-        s.writeAll(m.dartDoc!.split('\n'), '\n$depth/// ');
-        s.write('\n');
-      }
-      if (m.type case final ConstantArray arrayType) {
-        s.writeln(makeArrayAnnotation(w, arrayType));
-        s.write('${depth}external ${_getInlineArrayTypeString(m.type, w)} ');
-        s.write('${m.name};\n\n');
-      } else {
-        final memberName =
-            m.type.sameDartAndFfiDartType ? m.name : '${m.name}AsInt';
-        s.write(
-            'final ${m.type.getFfiDartType(w)} $memberName;\n\n');
-      }
-      if (m.type case EnumClass(:final generateAsInt) when !generateAsInt) {
-        final enumName = m.type.getDartType(w);
-        final memberName = m.name;
-        s.write(
-          '$enumName get $memberName => '
-          '$enumName.fromValue(${memberName}AsInt);\n\n',
-        );
-      }
-    }
-    s.write('}\n\n');
-
-    return BindingString(type: bindingType, string: s.toString());
+  final bindingType =
+      isStruct ? BindingStringType.struct : BindingStringType.union;
+  if (_isBuiltIn) {
+    return BindingString(type: bindingType, string: '');
   }
+
+  final s = StringBuffer();
+  final enclosingClassName = name;
+  if (dartDoc != null) {
+    s.write(makeDartDoc(dartDoc!));
+  }
+
+  /// Adding [enclosingClassName] because dart doesn't allow class member
+  /// to have the same name as the class.
+  final localUniqueNamer = UniqueNamer({enclosingClassName});
+
+  /// Marking type names because dart doesn't allow class member to have the
+  /// same name as a type name used internally.
+  for (final m in members) {
+    localUniqueNamer.markUsed(m.type.getFfiDartType(w));
+  }
+
+  /// Write @Packed(X) annotation if struct is packed.
+  if (isStruct && pack != null) {
+    s.write('@${w.ffiLibraryPrefix}.Packed($pack)\n');
+  }
+  final dartClassName = isStruct ? 'Struct' : 'Union';
+  // Write class declaration.
+  s.write('final class $enclosingClassName extends ');
+  s.write('${w.selfImportPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
+  const depth = '  ';
+  
+  // Constructor parameters
+  List<String> constructorParams = [];
+  
+  for (final m in members) {
+    m.name = localUniqueNamer.makeUnique(m.name);
+    if (m.dartDoc != null) {
+      s.write('$depth/// ');
+      s.writeAll(m.dartDoc!.split('\n'), '\n$depth/// ');
+      s.write('\n');
+    }
+    if (m.type case final ConstantArray arrayType) {
+      s.writeln(makeArrayAnnotation(w, arrayType));
+      s.write('${depth}external ${_getInlineArrayTypeString(m.type, w)} ');
+      s.write('${m.name};\n\n');
+      
+      constructorParams.add('required this.${m.name}');
+    } else {
+      final memberName =
+          m.type.sameDartAndFfiDartType ? m.name : '${m.name}AsInt';
+      s.write('${depth}final ${m.type.getFfiDartType(w)} $memberName;\n\n');
+      
+      constructorParams.add('this.$memberName');
+    }
+    if (m.type case EnumClass(:final generateAsInt) when !generateAsInt) {
+      final enumName = m.type.getDartType(w);
+      final memberName = m.name;
+      s.write(
+        '${depth}$enumName get $memberName => '
+        '$enumName.fromValue(${memberName}AsInt);\n\n',
+      );
+    }
+  }
+  
+  // Add constructor with required named parameters
+  s.write('${depth} $enclosingClassName(\n');
+  for (int i = 0; i < constructorParams.length; i++) {
+    s.write('$depth$depth${constructorParams[i]}');
+    if (i < constructorParams.length - 1) {
+      s.write(',');
+    }
+    s.write('\n');
+  }
+  s.write('$depth);\n\n');
+  
+  s.write('}\n\n');
+
+  return BindingString(type: bindingType, string: s.toString());
+}
 
   @override
   void addDependencies(Set<Binding> dependencies) {
@@ -186,7 +203,7 @@ abstract class Compound extends BindingType {
   bool get isIncompleteCompound => isIncomplete;
 
   @override
-  String getCType(Writer w) {
+  String getFfiDartType(Writer w) {
     final builtInName =
         objCBuiltInFunctions?.getBuiltInCompoundName(originalName);
     return builtInName != null ? '${w.objcPkgPrefix}.$builtInName' : name;
@@ -195,8 +212,6 @@ abstract class Compound extends BindingType {
   @override
   String getNativeType({String varName = ''}) => '$nativeType $varName';
 
-  @override
-  bool get sameFfiDartAndCType => true;
 }
 
 class Member {

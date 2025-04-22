@@ -77,16 +77,6 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
       return funcs;
     }
 
-    if (returnType is Struct) {
-      var originalReturnType = returnType;
-      var outType = PointerType(originalReturnType);
-      returnType = NativeType(SupportedNativeType.voidType);
-      parameters.insert(
-          0,
-          Parameter(
-              name: "out", type: outType, objCConsumed: false));
-    }
-
     if (returnType.isIncompleteCompound || incompleteStructParameter) {
       _logger.fine(
           '---- Removed Function, reason: Incomplete struct pass/return by '

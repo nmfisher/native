@@ -28,10 +28,8 @@ class ObjCNullable extends Type {
   Type get baseType => child.baseType;
 
   @override
-  String getCType(Writer w) => child.getCType(w);
-
-  @override
   String getFfiDartType(Writer w) => child.getFfiDartType(w);
+
 
   @override
   String getDartType(Writer w) => '${child.getDartType(w)}?';
@@ -43,12 +41,6 @@ class ObjCNullable extends Type {
   @override
   String getObjCBlockSignatureType(Writer w) =>
       '${child.getObjCBlockSignatureType(w)}?';
-
-  @override
-  bool get sameFfiDartAndCType => child.sameFfiDartAndCType;
-
-  @override
-  bool get sameDartAndCType => false;
 
   @override
   bool get sameDartAndFfiDartType => false;

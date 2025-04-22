@@ -106,16 +106,96 @@ class Func extends LookUpBinding {
       p.name = paramNamer.makeUnique(p.name);
     }
 
-    final ffiReturnType = functionType.returnType.getFfiDartType(w);
-    final ffiArgDeclString = functionType.dartTypeParameters
-        .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
-        .join('');         
+    if (functionType.returnType is Struct) {
+      final originalReturnType = functionType.returnType;
+
+      final structType = functionType.returnType as Struct;
+      final structName = structType.name;
+
+      final outParam = Parameter(
+          name: '${structName}_out',
+          type: PointerType(originalReturnType),
+          objCConsumed: false);
+
+      final argDeclString = [outParam, ...functionType.dartTypeParameters]
+          .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
+          .join('');
+      final forwardArgsString =
+          functionType.dartTypeParameters.map((p) => "${p.name},").join('');
+
+      var structSize = 0;
+      var fieldAllocators = '';
+      final fieldConstructorArgs = <String>[];
+      late String llvmType;
+      late String jsToDart;
+
+      for (var field in structType.members) {
+        int fieldSize = 0;
+        if (field.type == NativeType(SupportedNativeType.float)) {
+          fieldSize = 4;
+          llvmType = 'float';
+          jsToDart = '.toDartDouble';
+        } else if (field.type == NativeType(SupportedNativeType.double)) {
+          fieldSize = 8;
+          llvmType = 'double';
+          jsToDart = '.toDartDouble';
+        } else if (field.type == NativeType(SupportedNativeType.char)) {
+          fieldSize = 1;
+          llvmType = 'char';
+          jsToDart = '.toDartInt';
+        } else if (field.type == NativeType(SupportedNativeType.uint8)) {
+          fieldSize = 1;
+          jsToDart = '.toDartInt';
+        } else if (field.type == NativeType(SupportedNativeType.int32)) {
+          fieldSize = 4;
+          llvmType = 'i32';
+          jsToDart = '.toDartInt';
+        } else if (field.type == NativeType(SupportedNativeType.intPtr) ||
+            field.type == NativeType(SupportedNativeType.int64)) {
+          throw Exception("CHECK ME - 64bit int on JS?");
+          // structSize += 8;
+          llvmType = 'i64';
+          jsToDart = '.toDartInt';
+        } else if (field.type is PointerType) {
+          fieldSize = 8;
+          llvmType = 'i64';
+          jsToDart = ' as ${field.type.getDartType(w)}';
+        } else {
+          throw Exception("UNSUPPORTED : ${field.type}");
+        }
+        structSize += fieldSize;
+
+        fieldAllocators +=
+            '''final ${structName}_${field.name} = getValue(out, '$llvmType')$jsToDart;\n''';
+
+        // '''final ${structName}_${field.name} = stackAlloc<${field.type.getDartType(w)}>($fieldSize);''';
+        fieldConstructorArgs.add("${structName}_${field.name}");
+      }
+
+      s.write('''external void _$enclosingFuncName($argDeclString);''');
+      s.write(
+          '''${functionType.returnType.getFfiDartType(w)} $enclosingFuncName($argDeclString) {
+          final out = stackAlloc<${originalReturnType.getDartType(w)}>($structSize);
+          _$enclosingFuncName(out, $forwardArgsString);
+          $fieldAllocators
+
+          return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(',')});
+        }''');
+    } else {
+      final argDeclString = functionType.dartTypeParameters
+          .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
+          .join('');
+      final forwardArgsString =
+          functionType.dartTypeParameters.map((p) => "${p.name},").join('');
 
       final nativeFuncName = enclosingFuncName;
-      s.write('''
-external $ffiReturnType _$nativeFuncName($ffiArgDeclString);
-
-''');
+      s.write(
+          '''external ${functionType.returnType.getFfiDartType(w)} _$nativeFuncName($argDeclString);''');
+      s.write(
+          '''${functionType.returnType.getFfiDartType(w)} $nativeFuncName($argDeclString) {
+          return _$nativeFuncName($forwardArgsString);
+        }''');
+    }
 
     return BindingString(type: BindingStringType.func, string: s.toString());
   }

@@ -85,7 +85,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
 
     final methodNamer = createMethodRenamer(w);
 
-    final rawObjType = PointerType(objCObjectType).getCType(w);
+    final rawObjType = PointerType(objCObjectType).getFfiDartType(w);
     final wrapObjType = ObjCBuiltInFunctions.objectBase.gen(w);
 
     final superTypeIsInPkgObjc = superType == null;
@@ -203,7 +203,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
         assert(!convertReturn);
         final calloc = '${w.ffiPkgLibraryPrefix}.calloc';
         final sizeOf = '${w.ffiLibraryPrefix}.sizeOf';
-        final uint8Type = NativeType(SupportedNativeType.uint8).getCType(w);
+        final uint8Type = NativeType(SupportedNativeType.uint8).getFfiDartType(w);
         final invoke = m.msgSend!
             .invoke(w, target, sel, msgSendParams, structRetPtr: '_ptr');
         s.write('''
@@ -344,7 +344,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
   }
 
   @override
-  String getCType(Writer w) => PointerType(objCObjectType).getCType(w);
+  String getFfiDartType(Writer w) => PointerType(objCObjectType).getFfiDartType(w);
 
   @override
   String getDartType(Writer w) =>
@@ -355,12 +355,6 @@ class ObjCInterface extends BindingType with ObjCMethods {
 
   @override
   String getObjCBlockSignatureType(Writer w) => getDartType(w);
-
-  @override
-  bool get sameFfiDartAndCType => true;
-
-  @override
-  bool get sameDartAndCType => false;
 
   @override
   bool get sameDartAndFfiDartType => false;

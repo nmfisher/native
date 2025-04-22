@@ -56,13 +56,9 @@ class FunctionType extends Type {
   }
 
   @override
-  String getCType(Writer w, {bool writeArgumentNames = true}) =>
-      _getTypeImpl(writeArgumentNames, (Type t) => t.getCType(w),
-          varArgWrapper: '${w.ffiLibraryPrefix}.VarArgs');
-
-  @override
   String getFfiDartType(Writer w, {bool writeArgumentNames = true}) =>
-      _getTypeImpl(writeArgumentNames, (Type t) => t.getFfiDartType(w));
+      _getTypeImpl(writeArgumentNames, (Type t) => t.getFfiDartType(w),
+          varArgWrapper: '${w.ffiLibraryPrefix}.VarArgs');
 
   @override
   String getDartType(Writer w, {bool writeArgumentNames = true}) =>
@@ -73,16 +69,6 @@ class FunctionType extends Type {
     final arg = dartTypeParameters.map<String>((p) => p.type.getNativeType());
     return '${returnType.getNativeType()} (*$varName)(${arg.join(', ')})';
   }
-
-  @override
-  bool get sameFfiDartAndCType =>
-      returnType.sameFfiDartAndCType &&
-      dartTypeParameters.every((p) => p.type.sameFfiDartAndCType);
-
-  @override
-  bool get sameDartAndCType =>
-      returnType.sameDartAndCType &&
-      dartTypeParameters.every((p) => p.type.sameDartAndCType);
 
   @override
   bool get sameDartAndFfiDartType =>
@@ -140,23 +126,17 @@ class NativeFunc extends Type {
   }
 
   @override
-  String getCType(Writer w, {bool writeArgumentNames = true}) {
+  String getFfiDartType(Writer w, {bool writeArgumentNames = true}) {
     final funcType = _type is FunctionType
-        ? _type.getCType(w, writeArgumentNames: writeArgumentNames)
-        : _type.getCType(w);
+        ? _type.getFfiDartType(w, writeArgumentNames: writeArgumentNames)
+        : _type.getFfiDartType(w);
     return '${w.ffiLibraryPrefix}.NativeFunction<$funcType>';
   }
-
-  @override
-  String getFfiDartType(Writer w, {bool writeArgumentNames = true}) =>
-      getCType(w, writeArgumentNames: writeArgumentNames);
 
   @override
   String getNativeType({String varName = ''}) =>
       _type.getNativeType(varName: varName);
 
-  @override
-  bool get sameFfiDartAndCType => true;
 
   @override
   String toString() => 'NativeFunction<${_type.toString()}>';

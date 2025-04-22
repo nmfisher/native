@@ -10,7 +10,7 @@ Map<String, ImportedType> cxTypeKindToImportedTypes = {
   'void': voidType,
   'unsigned char': unsignedCharType,
   'signed char': signedCharType,
-  'char': charType,
+  // 'char': charType,
   'unsigned short': unsignedShortType,
   'short': shortType,
   'unsigned int': unsignedIntType,

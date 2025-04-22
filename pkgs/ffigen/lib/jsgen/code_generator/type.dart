@@ -9,7 +9,7 @@ import 'writer.dart';
 /// Type class for return types, variable types, etc.
 ///
 /// Implementers should extend either Type, or BindingType if the type is also a
-/// binding, and override at least getCType and toString.
+/// binding, and override at least getFfiDartType and toString.
 abstract class Type {
   const Type();
 
@@ -35,14 +35,10 @@ abstract class Type {
   /// Returns true if the type is a [Compound] and is incomplete.
   bool get isIncompleteCompound => false;
 
-  /// Returns the C type of the Type. This is the FFI compatible type that is
-  /// passed to native code.
-  String getCType(Writer w) =>
-      throw UnsupportedError('No mapping for type: $this');
-
   /// Returns the Dart type of the Type. This is the type that is passed from
   /// FFI to Dart code.
-  String getFfiDartType(Writer w) => getCType(w);
+  String getFfiDartType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
 
   /// Returns the user type of the Type. This is the type that is presented to
   /// users by the ffigened API to users. For C bindings this is always the same
@@ -50,10 +46,11 @@ abstract class Type {
   String getDartType(Writer w) => getFfiDartType(w);
 
   /// Returns the type to be used if this type appears in an ObjC block
-  /// signature. By default it's the same as [getCType]. But for some types
+  /// signature. By default it's the same as [getFfiDartType]. But for some types
   /// that's not enough to distinguish them (eg all ObjC objects have a C type
   /// of `Pointer<objc.ObjCObject>`), so we use [getDartType] instead.
-  String getObjCBlockSignatureType(Writer w) => getCType(w);
+  String getObjCBlockSignatureType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
 
   /// Returns the C/ObjC type of the Type. This is the type as it appears in
   /// C/ObjC source code. It should not be used in Dart source code.
@@ -64,11 +61,6 @@ abstract class Type {
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
 
-  /// Returns whether the FFI dart type and C type string are same.
-  bool get sameFfiDartAndCType;
-
-  /// Returns whether the dart type and C type string are same.
-  bool get sameDartAndCType => sameFfiDartAndCType;
 
   /// Returns whether the dart type and FFI dart type string are same.
   bool get sameDartAndFfiDartType => true;
@@ -152,20 +144,17 @@ abstract class BindingType extends NoLookUpBinding implements Type {
   bool get isIncompleteCompound => false;
 
   @override
-  String getFfiDartType(Writer w) => getCType(w);
+  String getFfiDartType(Writer w) => throw UnsupportedError('No mapping for type: $this');
 
   @override
   String getDartType(Writer w) => getFfiDartType(w);
 
   @override
-  String getObjCBlockSignatureType(Writer w) => getCType(w);
+  String getObjCBlockSignatureType(Writer w) => throw UnsupportedError('No mapping for type: $this');
 
   @override
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
-
-  @override
-  bool get sameDartAndCType => sameFfiDartAndCType;
 
   @override
   bool get sameDartAndFfiDartType => true;
@@ -210,6 +199,4 @@ class UnimplementedType extends Type {
   @override
   String toString() => '(Unimplemented: $reason)';
 
-  @override
-  bool get sameFfiDartAndCType => true;
 }

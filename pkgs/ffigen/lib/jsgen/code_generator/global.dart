@@ -47,7 +47,7 @@ class Global extends LookUpBinding {
     }
     final dartType = type.getDartType(w);
     final ffiDartType = type.getFfiDartType(w);
-    final cType = type.getCType(w);
+    final cType = type.getFfiDartType(w);
 
     void generateConvertingGetterAndSetter(String pointerValue) {
       final getValue =

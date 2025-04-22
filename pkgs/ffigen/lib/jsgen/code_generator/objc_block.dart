@@ -103,11 +103,11 @@ class ObjCBlock extends BindingType {
   BindingString toBindingString(Writer w) {
     final s = StringBuffer();
 
-    final voidPtr = PointerType(voidType).getCType(w);
+    final voidPtr = PointerType(voidType).getFfiDartType(w);
     final blockPtr = PointerType(objCBlockType);
     final funcType = FunctionType(returnType: returnType, parameters: params);
     final natFnType = NativeFunc(funcType);
-    final natFnPtr = PointerType(natFnType).getCType(w);
+    final natFnPtr = PointerType(natFnType).getFfiDartType(w);
     final funcPtrTrampoline =
         w.topLevelUniqueNamer.makeUnique('_${name}_fnPtrTrampoline');
     final closureTrampoline =
@@ -130,17 +130,17 @@ class ObjCBlock extends BindingType {
       Parameter(type: blockPtr, name: 'block', objCConsumed: false),
       ...params
     ]);
-    final trampFuncCType = trampFuncType.getCType(w, writeArgumentNames: false);
+    final trampFuncCType = trampFuncType.getFfiDartType(w, writeArgumentNames: false);
     final trampFuncFfiDartType =
         trampFuncType.getFfiDartType(w, writeArgumentNames: false);
-    final natTrampFnType = NativeFunc(trampFuncType).getCType(w);
+    final natTrampFnType = NativeFunc(trampFuncType).getFfiDartType(w);
     final nativeCallableType =
         '${w.ffiLibraryPrefix}.NativeCallable<$trampFuncCType>';
     final funcDartType = funcType.getDartType(w, writeArgumentNames: false);
     final funcFfiDartType =
         funcType.getFfiDartType(w, writeArgumentNames: false);
     final returnFfiDartType = returnType.getFfiDartType(w);
-    final blockCType = blockPtr.getCType(w);
+    final blockCType = blockPtr.getFfiDartType(w);
     final blockType = _blockType(w);
     final defaultValue = returnType.getDefaultValue(w);
     final exceptionalReturn = defaultValue == null ? '' : ', $defaultValue';
@@ -344,7 +344,7 @@ $blockName $fnName($blockName block) NS_RETURNS_RETAINED {
   }
 
   @override
-  String getCType(Writer w) => PointerType(objCBlockType).getCType(w);
+  String getFfiDartType(Writer w) => PointerType(objCBlockType).getFfiDartType(w);
 
   // We return `ObjCBlockBase<T>` here instead of the code genned wrapper, so
   // that the subtyping rules work as expected.
@@ -357,12 +357,6 @@ $blockName $fnName($blockName block) NS_RETURNS_RETAINED {
 
   @override
   String getNativeType({String varName = ''}) => 'id $varName';
-
-  @override
-  bool get sameFfiDartAndCType => true;
-
-  @override
-  bool get sameDartAndCType => false;
 
   @override
   bool get sameDartAndFfiDartType => false;
