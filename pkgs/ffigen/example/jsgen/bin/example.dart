@@ -30,7 +30,20 @@ void main(List<String> args) {
   assert(myStruct.b.getValue() == 'MY STRING', myStruct.b.getValue());
 
   var structArg = double3(1.0, 2.0, 3.0);
-  assert(module.structArgument(structArg) == 6, module.structArgument(structArg));
+  assert(
+      module.structArgument(structArg) == 6, module.structArgument(structArg));
+  print("structArgument");
+  var done = false;
+  module.voidFunctionArgument(() {
+    done = true;
+  });
+  done = false;
+
+  module.functionArgument((intVal) {
+    print(intVal + 10);
+    done = true;
+  });
+  assert(done);
 
   print('Example completed');
 }

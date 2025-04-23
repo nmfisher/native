@@ -6,6 +6,7 @@ emcc --no-entry \
     -sENVIRONMENT=shell \
     -sWASM_BIGINT=1 \
     -sALLOW_MEMORY_GROWTH=1 \
+    -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=example \
     -sMODULARIZE \
     -sEXPORTED_RUNTIME_METHODS=wasmExports,wasmTable,addFunction,removeFunction,ccall,cwrap,allocate,intArrayFromString,intArrayToString,getValue,setValue,UTF8ToString,stringToUTF8,writeArrayToMemory,lengthBytesUTF8 \

@@ -33,7 +33,19 @@ typedef struct MyStruct MyStruct;
 
 MyStruct returnStructByValue(float a, const char *b);
 
-
 int structArgument(double3 vector);
 
+void voidFunctionArgument(void(*callback)());
 void functionArgument(void(*callback)(int arg));
+
+enum MyEnum { 
+    ENUM_VAL1,
+    ENUM_VAL2,
+};
+typedef enum MyEnum MyEnum;
+
+MyEnum returnEnum();
+
+int acceptEnum(MyEnum val);
+
+

@@ -9,8 +9,6 @@
 #include <emscripten/console.h>
 #include "example.h"
 
-
-
 /** Adds 2 integers. */
 int EMSCRIPTEN_KEEPALIVE sum(int a, int b) {
     return a + b;
@@ -66,9 +64,27 @@ int EMSCRIPTEN_KEEPALIVE structArgument(double3 vector) {
     return vector.x + vector.y + vector.z;
 }
 
+void EMSCRIPTEN_KEEPALIVE voidFunctionArgument(void(*callback)()) {
+    callback();
+}
+
 void EMSCRIPTEN_KEEPALIVE functionArgument(void(*callback)(int arg)) {
-    // Call the function pointer with some value
     if (callback != NULL) {
         callback(42);
     }
 }
+
+MyEnum EMSCRIPTEN_KEEPALIVE returnEnum() {
+    return ENUM_VAL1;
+}
+
+int EMSCRIPTEN_KEEPALIVE acceptEnum(MyEnum val) {
+    switch(val) {
+        case ENUM_VAL1:
+            return 0;
+        case ENUM_VAL2:
+            return 1;
+    }
+}
+
+

@@ -269,6 +269,9 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
       userReturnType = ptrType.getDartType(w);
       interopReturnTypeConstructors
           .add('return $userReturnType(result, this);');
+    } else if (functionType.returnType is EnumClass) {
+      interopReturnTypeConstructors.add(
+          'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
     } else {
       interopReturnTypeConstructors.add('return result;');
     }
@@ -286,6 +289,10 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
 
       if (p.type is PointerType && p.type.baseType is! Struct) {
         return '${p.name}.addr,';
+      }
+
+      if(p.type is EnumClass) {
+        return '${p.name}.value,';
       }
 
       return "${p.name},";
