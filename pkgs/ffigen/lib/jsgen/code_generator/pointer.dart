@@ -8,10 +8,10 @@ import 'writer.dart';
 
 /// Represents a pointer.
 class PointerType extends Type {
-  
   final Type child;
   final int sizeInBytes = 8;
   final String llvmType = '*';
+  final String wasmType = 'p';
 
   PointerType._(this.child);
 

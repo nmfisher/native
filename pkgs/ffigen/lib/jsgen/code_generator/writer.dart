@@ -296,10 +296,11 @@ sealed class Char {}
 
 sealed class Void {}
 
-sealed class NativeFunction {}
+sealed class NativeFunction<T> {}
 
 extension type Pointer<T>(int addr) {
   Pointer<T> operator +(int offset) => Pointer<T>(addr + offset);
+  Pointer<U> cast<U>() => this as Pointer<U>;
 }
 
 abstract class Struct {

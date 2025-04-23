@@ -18,26 +18,16 @@ import 'writer.dart';
 /// int sum(int a, int b);
 /// ```
 ///
-/// The generated Dart code for this function (without `FfiNative`) is as
+/// The generated Dart code for this function is as
 /// follows.
 ///
 /// ```dart
+/// external int _sum(int a, int b);
+///
 /// int sum(int a, int b) {
 ///   return _sum(a, b);
 /// }
 ///
-/// final _dart_sum _sum = _dylib.lookupFunction<_c_sum, _dart_sum>('sum');
-///
-/// typedef _c_sum = ffi.Int32 Function(ffi.Int32 a, ffi.Int32 b);
-///
-/// typedef _dart_sum = int Function(int a, int b);
-/// ```
-///
-/// When using `Native`, the code is as follows.
-///
-/// ```dart
-/// @ffi.Native<ffi.Int32 Function(ffi.Int32 a, ffi.Int32 b)>('sum')
-/// external int sum(int a, int b);
 /// ```
 class Func extends LookUpBinding {
   final FunctionType functionType;
@@ -143,46 +133,81 @@ class Func extends LookUpBinding {
     // - a Finalizer will be used to call removeFunction when the Dart Function
     //   is garbage-collected. (?)
     //
-    String interopFunctionName = "_$name";
-    String userFacingFunctionName = name;
+    final interopFunctionName = "_$name";
+    final userFunctionName = name;
 
-    var interopArguments = <Parameter>[];
-    var userFacingArguments = <Parameter>[];
+    var interopReturnType = functionType.returnType.getDartType(w);
 
-    var structArgumentAllocator = '';
+    final interopArguments = <Parameter>[];
+    final userArguments = <Parameter>[];
+    final interopArgumentConstructors = <String>[];
+    final interopReturnTypeConstructors = <String>[];
 
+    // iterate over the arguments for the native function
     for (final param in functionType.parameters) {
-      var paramType = param.type;
+      final paramType = param.type;
 
+      // if the argument is a function pointer:
+      // 1) adjust the user facing function params to accept a matching Dart
+      //    function argument
+      // 2) inside the user-facing function, construct an interop type with
+      //    addFunction
       if (paramType.baseType is NativeFunc) {
-        var fnType = (paramType.baseType as NativeFunc).type;
+        final userParam = Parameter(
+            name: param.name,
+            originalName: param.originalName,
+            type: (paramType.baseType as NativeFunc).type,
+            objCConsumed: false);
+        userArguments.add(userParam);
 
-        var param = Parameter(type: fnType, objCConsumed: false);
-        dartFunctionArguments.add(param);
+        final interopFnPtrName = '${param.name}_interopFnPtr';
+        interopArguments.add(Parameter(
+          name: interopFnPtrName,
+          type: param.type, objCConsumed: false));
 
-        // structArgumentAllocator +=
-        //     '''final $argPtrName = addFunction();\n''';
+        final wasmSignature = (paramType.baseType as NativeFunc).wasmSignature;
+        
+
+        final paramConstructor = '''
+final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''';
+        interopArgumentConstructors.add(paramConstructor);
+
+        // if the argument is a struct:
+        // 1) inside the user-facing function, stack-allocate memory for the
+        //    struct
+        // 2) populate the memory with the values from the Dart class
+        // 3) adjust the interop argument to accept a pointer
       } else if (paramType is Struct) {
-        var argPtrName = '${param.name}_structPtr';
-        var paramMembers = paramType.members;
+        final argPtrName = '${param.name}_structPtr';
 
-        structArgumentAllocator +=
-            '''final $argPtrName = stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n''';
-        for (final paramMember in paramMembers) {
-          structArgumentAllocator +=
-              '''setValue($argPtrName, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');''';
+        var paramConstructor =
+            "final $argPtrName = stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n";
+
+        for (final paramMember in paramType.members) {
+          paramConstructor +=
+              "setValue($argPtrName, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
         }
-        dartFunctionArguments.add(param);
+        interopArgumentConstructors.add(paramConstructor);
+        interopArguments.add(Parameter(
+            name: argPtrName,
+            type: PointerType(paramType),
+            objCConsumed: false));
+        userArguments.add(param);
       } else {
-        dartFunctionArguments.add(param);
+        interopArguments.add(param);
+        userArguments.add(param);
       }
     }
 
-    // if the function returns a struct by value,
-    // we need to transform the invocation to allocate memory
-    // for the return type struct, and pass a pointer to this struct as the first parameter
+    // if the function returns a struct by value:
+    // 1) inside the user-facing function, stack-allocate memory for the struct
+    // 2) adjust the parameters for the interop function to accept a pointer to
+    //    this struct as the first parameter
+    // 3) adjust the return type for the interop function to return void
     if (functionType.returnType is Struct) {
       final originalReturnType = functionType.returnType;
+      interopReturnType =
+          NativeType(SupportedNativeType.voidType).getDartType(w);
 
       final structType = functionType.returnType as Struct;
       final structName = structType.name;
@@ -191,16 +216,12 @@ class Func extends LookUpBinding {
           name: '${structName}_out',
           type: PointerType(originalReturnType),
           objCConsumed: false);
+      interopArgumentConstructors.add(
+          "final ${outParam.name} = stackAlloc<${structType.name}>(${structType.sizeInBytes});");
 
-      final argDeclString = [outParam, ...functionType.dartTypeParameters]
-          .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
-          .join('');
-      final forwardArgsString =
-          functionType.dartTypeParameters.map((p) => "${p.name},").join('');
+      interopArguments.insert(0, outParam);
 
-      var structSize = 0;
-      var fieldAllocators = '';
-      final fieldConstructorArgs = <String>[];
+      var outFieldNames = <String>[];
 
       for (final field in structType.members) {
         if (field.type is! NativeType && field.type is! PointerType) {
@@ -218,40 +239,62 @@ class Func extends LookUpBinding {
           final inner = ptrType.child.getDartType(w);
           jsToDart = '.toDartInt as Pointer<$inner>';
         }
-        structSize += field.type.sizeInBytes;
 
-        fieldAllocators +=
-            '''final ${structName}_${field.name} = getValue(out, '${field.type.llvmType}')$jsToDart;\n''';
+        var fieldName = '${structName}_${field.name}';
+        outFieldNames.add(fieldName);
 
-        fieldConstructorArgs.add('${structName}_${field.name}');
+        interopReturnTypeConstructors.add(
+            "final $fieldName = getValue(${outParam.name}, '${field.type.llvmType}')$jsToDart;");
       }
-
-      s.write('''external void _$name($argDeclString);''');
-      s.write(
-          '''${functionType.returnType.getFfiDartType(w)} $name($argDeclString) {
-          $structArgumentAllocator
-          final out = stackAlloc<${originalReturnType.getDartType(w)}>($structSize);
-          _$name(out, $forwardArgsString);
-          $fieldAllocators
-
-          return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(',')});
-        }''');
+      interopReturnTypeConstructors.add(
+          "return ${originalReturnType.getDartType(w)}(${outFieldNames.join(',')});");
     } else {
-      final argDeclString = functionType.dartTypeParameters
-          .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
-          .join('');
-      final forwardArgsString =
-          functionType.dartTypeParameters.map((p) => "${p.name},").join('');
-
-      final nativeFuncName = name;
-      s.write(
-          '''external ${functionType.returnType.getFfiDartType(w)} _$nativeFuncName($argDeclString);''');
-      s.write(
-          '''${functionType.returnType.getFfiDartType(w)} $nativeFuncName($argDeclString) {
-          $structArgumentAllocator
-          return _$nativeFuncName($forwardArgsString);
-        }''');
+      interopReturnTypeConstructors.add('return result;');
     }
+
+    final userArgsString = userArguments
+        .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
+        .join('');
+    final interopArgsString = interopArguments
+        .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
+        .join('');
+    final invokeInteropArgsString =
+        interopArguments.map((p) => p.type.baseType is NativeFunc ? '${p.name}.cast(),' :  "${p.name},").join('');
+
+    s.write(
+        '''external $interopReturnType $interopFunctionName($interopArgsString);''');
+    s.write(
+        '''${functionType.returnType.getFfiDartType(w)} $userFunctionName($userArgsString) {
+            ${interopArgumentConstructors.join("\n")}
+            final result = $interopFunctionName($invokeInteropArgsString);
+            ${interopReturnTypeConstructors.join("\n")}
+}''');
+    // s.write(return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(','))
+    // s.write(return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(','))
+
+    //       $structArgumentAllocator
+    //       final out = stackAlloc<${originalReturnType.getDartType(w)}>($structSize);
+    //       _$name(out, $forwardArgsString);
+    //       $fieldAllocators
+
+    //       return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(',')});
+    //     }''');
+    // } else {
+    //   final argDeclString = functionType.dartTypeParameters
+    //       .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
+    //       .join('');
+    //   final forwardArgsString =
+    //       functionType.dartTypeParameters.map((p) => "${p.name},").join('');
+
+    //   final nativeFuncName = name;
+    //   s.write(
+    //       '''external ${functionType.returnType.getFfiDartType(w)} _$nativeFuncName($argDeclString);''');
+    //   s.write(
+    //       '''${functionType.returnType.getFfiDartType(w)} $nativeFuncName($argDeclString) {
+    //       $structArgumentAllocator
+    //       return _$nativeFuncName($forwardArgsString);
+    //     }''');
+    // }
 
     return BindingString(type: BindingStringType.func, string: s.toString());
   }

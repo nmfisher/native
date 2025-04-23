@@ -152,10 +152,34 @@ class NativeFunc extends Type {
   String cacheKey() => 'NatFn(${_type.cacheKey()})';
 
   @override
-  // TODO: implement llvmType
-  String get llvmType => throw UnimplementedError();
+  String get llvmType => throw Exception();
+
+  String get wasmSignature {
+    var ft = _type is Typealias
+        ? _type.typealiasType as FunctionType
+        : _type as FunctionType;
+    var signature = "";
+    var returnType = ft.returnType;
+    if (returnType is NativeType) {
+      signature += returnType.wasmType;
+    } else if (returnType is PointerType) {
+      signature += returnType.wasmType;
+    } else {
+      throw UnsupportedError(returnType.toString());
+    }
+    for (final param in ft.parameters) {
+      var paramType = param.type;
+      if (paramType is NativeType) {
+        signature += paramType.wasmType;
+      } else if (paramType is PointerType) {
+        signature += paramType.wasmType;
+      } else {
+        throw UnsupportedError(returnType.toString());
+      }
+    }
+    return signature;
+  }
 
   @override
-  // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
 }
