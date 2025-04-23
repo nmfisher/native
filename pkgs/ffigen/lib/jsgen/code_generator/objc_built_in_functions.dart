@@ -286,8 +286,8 @@ class ObjCMsgSendVariantFunc extends NoLookUpBinding {
 
   @override
   BindingString toBindingString(Writer w) {
-    final cType = NativeFunc(type).getFfiDartType(w, writeArgumentNames: false);
-    final dartType = type.getFfiDartType(w, writeArgumentNames: false);
+    final cType = NativeFunc(type).getInteropDartType(w, writeArgumentNames: false);
+    final dartType = type.getInteropDartType(w, writeArgumentNames: false);
     final pointer = variant.pointer.gen(w);
 
     final bindingString = '''

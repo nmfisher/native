@@ -275,9 +275,9 @@ class EnumClass extends BindingType {
   }
 
   @override
-  String getFfiDartType(Writer w) {
+  String getInteropDartType(Writer w) {
     w.usedEnumCType = true;
-    return nativeType.getFfiDartType(w);
+    return nativeType.getInteropDartType(w);
   }
 
 

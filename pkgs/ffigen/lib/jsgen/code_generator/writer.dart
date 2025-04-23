@@ -39,7 +39,7 @@ class Writer {
 
   final List<String> nativeEntryPoints;
 
-  /// Tracks where enumType.getFfiDartType is called. Reset everytime [generate] is
+  /// Tracks where enumType.getInteropDartType is called. Reset everytime [generate] is
   /// called.
   bool usedEnumCType = false;
 
@@ -288,59 +288,109 @@ class Writer {
       // Write wrapper classs.
 
       s.write('''
-
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
-sealed class Int32 {}
-sealed class Int64 {}
-sealed class Float {}
-sealed class Char {}
-sealed class Void {}
-sealed class NativeFunction<T> {}
+sealed class NativeType<T> {}
 
-extension type PointerAddress<T>(int addr) {
+class Int32 extends NativeType<int> {}
+
+class Int64 extends NativeType<int> {}
+
+class Double extends NativeType<double> {}
+
+class Float extends NativeType<double> {}
+
+class Void extends NativeType<void> {}
+
+class NativeFunction<T> extends NativeType<Function> {}
+
+class Struct extends NativeType {}
+
+extension type PointerAddress<T extends NativeType>(int addr) {
   PointerAddress<T> operator +(int offset) => PointerAddress<T>(addr + offset);
-  PointerAddress<U> cast<U>() => this as PointerAddress<U>;
+  PointerAddress<U> cast<U  extends NativeType>() => this as PointerAddress<U>;
 }
 
-class Pointer<T,U> {
+class Pointer<T extends NativeType> {
   final NativeLibrary module;
-  final PointerAddress<U> addr;
+  final PointerAddress<T> addr;
+
+  final llvmType = switch (T) {
+    Double => "double",
+    Float => "float",
+    Int32 => "i32",
+    Int64 => "i64",
+    _ => throw UnsupportedError("TODO")
+  };
 
   Pointer(this.addr, this.module);
 
-  T get value { 
-    final llvmType = switch (U) {
-      double => "double",
-      Float => "float",
-      Int32 => "i32",
-      Int64 => "i64",
-      _ => throw UnsupportedError("TODO")
-    };
+}
+
+extension Int32Ptr on Pointer<Int32> {
+  void setValue(int value) {
+    module.setValue(addr, value.toJS, llvmType);
+  }
+
+  int getValue() {
     var jsValue = module.getValue(this.addr, llvmType);
-    switch (T) {
-      case Float:
-      case double:
-        return jsValue.toDartDouble as T;
-      case Int64:
-      case Int32:
-        return jsValue.toDartInt as T;
-      default:
-        throw UnimplementedError();
-    }
+    return jsValue.toDartInt ;
   }
 }
 
-abstract class Struct {
-  
+extension Int64Ptr on Pointer<Int64> {
+  void setValue(int value) {
+    module.setValue(addr, value.toJS, llvmType);
+  }
+  int getValue() {
+    var jsValue = module.getValue(this.addr, llvmType);
+    return jsValue.toDartInt ;
+  }
 }
 
-extension type $_className(JSObject _) implements JSObject { 
+extension FloatPtr on Pointer<Float> {
+  void setValue(double value) {
+    module.setValue(addr, value.toJS, llvmType);
+  }
+  double getValue() {
+    var jsValue = module.getValue(this.addr, llvmType);
+    return jsValue.toDartDouble;
+  }
+}
 
-  external self.PointerAddress<T> stackAlloc<T>(int numBytes);
+extension DoublePtr on Pointer<Double> {
+  void setValue(double value) {
+    module.setValue(addr, value.toJS, llvmType);
+  }
+  double getValue() {
+    var jsValue = module.getValue(this.addr, llvmType);
+    return jsValue.toDartDouble;
+  }
+}
+
+
+extension type NativeLibrary(JSObject _) implements JSObject {
+  @JS('stackAlloc')
+  external self.PointerAddress<T> _stackAlloc<T extends NativeType>(int numBytes);
+  self.Pointer<T> stackAlloc<T extends NativeType>(int count) {
+    int numBytes = 0;
+    switch (T) {
+      case Int32:
+      case Float:
+        numBytes = 4;
+      case Pointer:
+      case Int64:
+      case Double:
+        numBytes = 8;
+    }
+    var addr = _stackAlloc<T>(numBytes * count);
+    return Pointer<T>(addr, this);
+  }
+
   external JSNumber getValue(self.PointerAddress addr, String llvmType);
-  external void setValue(self.PointerAddress addr, JSNumber value, String llvmType);
+  external void setValue(
+      self.PointerAddress addr, JSNumber value, String llvmType);
 
   external JSString intArrayToString(JSAny ptr);
   external JSString UTF8ToString(JSAny ptr);
@@ -348,7 +398,8 @@ extension type $_className(JSObject _) implements JSObject {
       JSString str, JSNumber ptr, JSNumber maxBytesToWrite);
   external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
 
-  external self.PointerAddress<NativeFunction> addFunction(JSFunction f, String signature);
+  external self.PointerAddress<NativeFunction> addFunction(
+      JSFunction f, String signature);
   external void removeFunction(self.PointerAddress<NativeFunction> f);
   external JSAny get ALLOC_STACK;
   external JSAny get HEAPU32;

@@ -85,7 +85,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
 
     final methodNamer = createMethodRenamer(w);
 
-    final rawObjType = PointerType(objCObjectType).getFfiDartType(w);
+    final rawObjType = PointerType(objCObjectType).getInteropDartType(w);
     final wrapObjType = ObjCBuiltInFunctions.objectBase.gen(w);
 
     final superTypeIsInPkgObjc = superType == null;
@@ -203,7 +203,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
         assert(!convertReturn);
         final calloc = '${w.ffiPkgLibraryPrefix}.calloc';
         final sizeOf = '${w.ffiLibraryPrefix}.sizeOf';
-        final uint8Type = NativeType(SupportedNativeType.uint8).getFfiDartType(w);
+        final uint8Type = NativeType(SupportedNativeType.uint8).getInteropDartType(w);
         final invoke = m.msgSend!
             .invoke(w, target, sel, msgSendParams, structRetPtr: '_ptr');
         s.write('''
@@ -344,7 +344,7 @@ class ObjCInterface extends BindingType with ObjCMethods {
   }
 
   @override
-  String getFfiDartType(Writer w) => PointerType(objCObjectType).getFfiDartType(w);
+  String getInteropDartType(Writer w) => PointerType(objCObjectType).getInteropDartType(w);
 
   @override
   String getDartType(Writer w) =>

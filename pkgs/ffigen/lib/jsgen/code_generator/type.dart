@@ -9,7 +9,7 @@ import 'writer.dart';
 /// Type class for return types, variable types, etc.
 ///
 /// Implementers should extend either Type, or BindingType if the type is also a
-/// binding, and override at least getFfiDartType and toString.
+/// binding, and override at least getInteropDartType and toString.
 abstract class Type {
   const Type();
 
@@ -38,18 +38,22 @@ abstract class Type {
   /// Returns true if the type is a [Compound] and is incomplete.
   bool get isIncompleteCompound => false;
 
+  /// Returns the Dart type of the Type. This is only used for pointers.
+  String getWasmType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
+
   /// Returns the Dart type of the Type. This is the type that is passed from
-  /// FFI to Dart code.
-  String getFfiDartType(Writer w) =>
+  /// Dart to the interop code.
+  String getInteropDartType(Writer w) =>
       throw UnsupportedError('No mapping for type: $this');
 
   /// Returns the user type of the Type. This is the type that is presented to
   /// users by the ffigened API to users. For C bindings this is always the same
-  /// as getFfiDartType. For ObjC bindings this refers to the wrapper object.
-  String getDartType(Writer w) => getFfiDartType(w);
+  /// as getInteropDartType. For ObjC bindings this refers to the wrapper object.
+  String getDartType(Writer w) => getInteropDartType(w);
 
   /// Returns the type to be used if this type appears in an ObjC block
-  /// signature. By default it's the same as [getFfiDartType]. But for some types
+  /// signature. By default it's the same as [getInteropDartType]. But for some types
   /// that's not enough to distinguish them (eg all ObjC objects have a C type
   /// of `Pointer<objc.ObjCObject>`), so we use [getDartType] instead.
   String getObjCBlockSignatureType(Writer w) =>
@@ -146,11 +150,16 @@ abstract class BindingType extends NoLookUpBinding implements Type {
   bool get isIncompleteCompound => false;
 
   @override
-  String getFfiDartType(Writer w) =>
+  String getWasmType(Writer w) =>
+      throw UnsupportedError('No mapping for type: $this');
+
+
+  @override
+  String getInteropDartType(Writer w) =>
       throw UnsupportedError('No mapping for type: $this');
 
   @override
-  String getDartType(Writer w) => getFfiDartType(w);
+  String getDartType(Writer w) => getInteropDartType(w);
 
   @override
   String getObjCBlockSignatureType(Writer w) =>

@@ -150,7 +150,7 @@ Type getCodeGenType(
       return NativeType(SupportedNativeType.double);
     case clang_types.CXTypeKind.CXType_Char_S:
     case clang_types.CXTypeKind.CXType_Char_U:
-      return SelfImportedType("Char", "char");
+      return NativeType(SupportedNativeType.char);
     case clang_types.CXTypeKind.CXType_Attributed:
     case clang_types.CXTypeKind.CXType_Unexposed:
       final innerType = getCodeGenType(

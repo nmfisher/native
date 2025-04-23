@@ -31,8 +31,12 @@ class PointerType extends Type {
   Type get baseType => child.baseType;
 
   @override
-  String getFfiDartType(Writer w) =>
-      '${w.selfImportPrefix}.PointerAddress<${child.getDartType(w)}>';
+  String getInteropDartType(Writer w) =>
+      '${w.selfImportPrefix}.PointerAddress<${child.getWasmType(w)}>';
+
+  @override
+  String getDartType(Writer w) =>
+      '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
 
   @override
   String getNativeType({String varName = ''}) =>
@@ -70,12 +74,12 @@ class ConstantArray extends PointerType {
   String cacheKey() => '${child.cacheKey()}[$length]';
 
   @override
-  String getFfiDartType(Writer w) {
+  String getInteropDartType(Writer w) {
     if (useArrayType) {
-      return '${w.ffiLibraryPrefix}.Array<${child.getFfiDartType(w)}>';
+      return '${w.ffiLibraryPrefix}.Array<${child.getInteropDartType(w)}>';
     }
 
-    return super.getFfiDartType(w);
+    return super.getInteropDartType(w);
   }
 }
 

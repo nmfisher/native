@@ -56,8 +56,8 @@ class FunctionType extends Type {
   }
 
   @override
-  String getFfiDartType(Writer w, {bool writeArgumentNames = true}) =>
-      _getTypeImpl(writeArgumentNames, (Type t) => t.getFfiDartType(w),
+  String getInteropDartType(Writer w, {bool writeArgumentNames = true}) =>
+      _getTypeImpl(writeArgumentNames, (Type t) => t.getInteropDartType(w),
           varArgWrapper: '${w.ffiLibraryPrefix}.VarArgs');
 
   @override
@@ -134,10 +134,10 @@ class NativeFunc extends Type {
   }
 
   @override
-  String getFfiDartType(Writer w, {bool writeArgumentNames = true}) {
+  String getInteropDartType(Writer w, {bool writeArgumentNames = true}) {
     final funcType = _type is FunctionType
-        ? _type.getFfiDartType(w, writeArgumentNames: writeArgumentNames)
-        : _type.getFfiDartType(w);
+        ? _type.getInteropDartType(w, writeArgumentNames: writeArgumentNames)
+        : _type.getInteropDartType(w);
     return '${w.selfImportPrefix}.NativeFunction<$funcType>';
   }
 
@@ -153,6 +153,9 @@ class NativeFunc extends Type {
 
   @override
   String get llvmType => throw Exception();
+
+  @override
+  String getWasmType(Writer w) => getInteropDartType(w);
 
   String get wasmSignature {
     var ft = _type is Typealias

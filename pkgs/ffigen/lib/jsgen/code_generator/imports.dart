@@ -47,7 +47,7 @@ class ImportedType extends Type {
       [this.defaultValue]);
 
   @override
-  String getFfiDartType(Writer w) {
+  String getInteropDartType(Writer w) {
     w.markImportUsed(libraryImport);
     return '${libraryImport.prefix}.$cType';
   }
@@ -80,7 +80,7 @@ class SelfImportedType extends Type {
   SelfImportedType(this.cType, this.dartType, [this.defaultValue]);
 
   @override
-  String getFfiDartType(Writer w) => cType;
+  String getInteropDartType(Writer w) => cType;
 
   @override
   String toString() => cType;

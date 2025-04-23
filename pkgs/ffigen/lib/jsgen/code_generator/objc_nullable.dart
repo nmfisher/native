@@ -28,7 +28,7 @@ class ObjCNullable extends Type {
   Type get baseType => child.baseType;
 
   @override
-  String getFfiDartType(Writer w) => child.getFfiDartType(w);
+  String getInteropDartType(Writer w) => child.getInteropDartType(w);
 
 
   @override

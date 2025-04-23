@@ -23,7 +23,7 @@ enum SupportedNativeType {
   uintPtr,
 }
 
-/// Represents a primitive native type, such as float.
+/// Represents a WASM type
 class NativeType extends Type {
   static const _primitives = <SupportedNativeType, NativeType>{
     SupportedNativeType.voidType: NativeType._('void', 'void', 0, 'null', 'v'),
@@ -54,8 +54,17 @@ class NativeType extends Type {
 
   final String wasmType;
 
-  String get wasmTypeDartRepresentation {
-    switch (wasmType) {
+  const NativeType._(this._dartType, this._nativeType, this.sizeInBytes,
+      this.llvmType, this.wasmType);
+
+  factory NativeType(SupportedNativeType type) => _primitives[type]!;
+
+  @override
+  String getInteropDartType(Writer w) => _dartType;
+
+  @override
+  String getWasmType(Writer w) {
+     switch (wasmType) {
       case 'i':
         return 'Int32';
       case 'j':
@@ -63,21 +72,13 @@ class NativeType extends Type {
       case 'f':
         return 'Float';
       case 'd':
-        return 'double';
+        return 'Double';
       case 'p':
         return 'PointerAddress';
       default:
         throw UnimplementedError(wasmType);
     }
   }
-
-  const NativeType._(this._dartType, this._nativeType, this.sizeInBytes,
-      this.llvmType, this.wasmType);
-
-  factory NativeType(SupportedNativeType type) => _primitives[type]!;
-
-  @override
-  String getFfiDartType(Writer w) => _dartType;
 
   @override
   String getNativeType({String varName = ''}) => '$_nativeType $varName';

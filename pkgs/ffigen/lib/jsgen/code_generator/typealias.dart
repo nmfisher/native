@@ -23,7 +23,7 @@ class Typealias extends BindingType {
   /// Creates a Typealias.
   ///
   /// If [genFfiDartType] is true, a binding is generated for the Ffi Dart type
-  /// in addition to the C type. See [Type.getFfiDartType].
+  /// in addition to the C type. See [Type.getInteropDartType].
   factory Typealias({
     String? usr,
     String? originalName,
@@ -110,9 +110,9 @@ class Typealias extends BindingType {
     if (dartDoc != null) {
       sb.write(makeDartDoc(dartDoc!));
     }
-    sb.write('typedef $name = ${type.getFfiDartType(w)};\n');
+    sb.write('typedef $name = ${type.getInteropDartType(w)};\n');
     if (_ffiDartAliasName != null) {
-      sb.write('typedef $_ffiDartAliasName = ${type.getFfiDartType(w)};\n');
+      sb.write('typedef $_ffiDartAliasName = ${type.getInteropDartType(w)};\n');
     }
     if (_dartAliasName != null) {
       sb.write('typedef $_dartAliasName = ${type.getDartType(w)};\n');
@@ -128,7 +128,7 @@ class Typealias extends BindingType {
   bool get isIncompleteCompound => type.isIncompleteCompound;
 
   @override
-  String getFfiDartType(Writer w) => name;
+  String getInteropDartType(Writer w) => name;
 
   @override
   String getNativeType({String varName = ''}) =>

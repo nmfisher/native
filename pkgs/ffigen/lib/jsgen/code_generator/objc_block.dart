@@ -103,11 +103,11 @@ class ObjCBlock extends BindingType {
   BindingString toBindingString(Writer w) {
     final s = StringBuffer();
 
-    final voidPtr = PointerType(voidType).getFfiDartType(w);
+    final voidPtr = PointerType(voidType).getInteropDartType(w);
     final blockPtr = PointerType(objCBlockType);
     final funcType = FunctionType(returnType: returnType, parameters: params);
     final natFnType = NativeFunc(funcType);
-    final natFnPtr = PointerType(natFnType).getFfiDartType(w);
+    final natFnPtr = PointerType(natFnType).getInteropDartType(w);
     final funcPtrTrampoline =
         w.topLevelUniqueNamer.makeUnique('_${name}_fnPtrTrampoline');
     final closureTrampoline =
@@ -130,31 +130,31 @@ class ObjCBlock extends BindingType {
       Parameter(type: blockPtr, name: 'block', objCConsumed: false),
       ...params
     ]);
-    final trampFuncCType = trampFuncType.getFfiDartType(w, writeArgumentNames: false);
+    final trampFuncCType = trampFuncType.getInteropDartType(w, writeArgumentNames: false);
     final trampFuncFfiDartType =
-        trampFuncType.getFfiDartType(w, writeArgumentNames: false);
-    final natTrampFnType = NativeFunc(trampFuncType).getFfiDartType(w);
+        trampFuncType.getInteropDartType(w, writeArgumentNames: false);
+    final natTrampFnType = NativeFunc(trampFuncType).getInteropDartType(w);
     final nativeCallableType =
         '${w.ffiLibraryPrefix}.NativeCallable<$trampFuncCType>';
     final funcDartType = funcType.getDartType(w, writeArgumentNames: false);
     final funcFfiDartType =
-        funcType.getFfiDartType(w, writeArgumentNames: false);
-    final returnFfiDartType = returnType.getFfiDartType(w);
-    final blockCType = blockPtr.getFfiDartType(w);
+        funcType.getInteropDartType(w, writeArgumentNames: false);
+    final returnFfiDartType = returnType.getInteropDartType(w);
+    final blockCType = blockPtr.getInteropDartType(w);
     final blockType = _blockType(w);
     final defaultValue = returnType.getDefaultValue(w);
     final exceptionalReturn = defaultValue == null ? '' : ', $defaultValue';
 
     final paramsNameOnly = params.map((p) => p.name).join(', ');
     final paramsFfiDartType =
-        params.map((p) => '${p.type.getFfiDartType(w)} ${p.name}').join(', ');
+        params.map((p) => '${p.type.getInteropDartType(w)} ${p.name}').join(', ');
     final paramsDartType =
         params.map((p) => '${p.type.getDartType(w)} ${p.name}').join(', ');
 
     // Write the function pointer based trampoline function.
     s.write('''
 $returnFfiDartType $funcPtrTrampoline($blockCType block, $paramsFfiDartType) =>
-    block.ref.target.cast<${natFnType.getFfiDartType(w)}>()
+    block.ref.target.cast<${natFnType.getInteropDartType(w)}>()
         .asFunction<$funcFfiDartType>()($paramsNameOnly);
 $voidPtr $funcPtrCallable = ${w.ffiLibraryPrefix}.Pointer.fromFunction<
     $trampFuncCType>($funcPtrTrampoline $exceptionalReturn).cast();
@@ -344,7 +344,7 @@ $blockName $fnName($blockName block) NS_RETURNS_RETAINED {
   }
 
   @override
-  String getFfiDartType(Writer w) => PointerType(objCBlockType).getFfiDartType(w);
+  String getInteropDartType(Writer w) => PointerType(objCBlockType).getInteropDartType(w);
 
   // We return `ObjCBlockBase<T>` here instead of the code genned wrapper, so
   // that the subtyping rules work as expected.
