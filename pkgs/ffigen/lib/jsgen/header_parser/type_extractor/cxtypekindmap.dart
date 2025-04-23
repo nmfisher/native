@@ -8,19 +8,6 @@ import '../../code_generator/imports.dart';
 
 Map<String, ImportedType> cxTypeKindToImportedTypes = {
   'void': voidType,
-  'unsigned char': unsignedCharType,
-  'signed char': signedCharType,
-  // 'char': charType,
-  'unsigned short': unsignedShortType,
-  'short': shortType,
-  'unsigned int': unsignedIntType,
-  // 'int': intType,
-  'unsigned long': unsignedLongType,
-  'long': longType,
-  'unsigned long long': unsignedLongLongType,
-  'long long': longLongType,
-  'float': floatType,
-  'double': doubleType,
 };
 
 Map<Type, ImportedType?> unsignedToSignedNativeIntType = Map.fromEntries(
@@ -49,6 +36,5 @@ Map<String, SupportedNativeType> suportedTypedefToSuportedNativeType = {
 };
 
 Map<String, ImportedType> supportedTypedefToImportedType = {
-  'size_t': sizeType,
-  'wchar_t': wCharType,
+  
 };

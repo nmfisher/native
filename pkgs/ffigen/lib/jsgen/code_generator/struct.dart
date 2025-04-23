@@ -35,7 +35,6 @@ class Struct extends Compound {
     super.dartDoc,
     super.members,
     super.isInternal,
-    super.objCBuiltInFunctions,
     super.nativeType,
   }) : super(compoundType: CompoundType.struct);
 

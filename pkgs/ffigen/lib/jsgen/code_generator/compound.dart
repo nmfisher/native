@@ -34,8 +34,6 @@ abstract class Compound extends BindingType {
   bool get isStruct => compoundType == CompoundType.struct;
   bool get isUnion => compoundType == CompoundType.union;
 
-  ObjCBuiltInFunctions? objCBuiltInFunctions;
-
   /// The way the native type is written in C source code. This isn't always the
   /// same as the originalName, because the type may need to be prefixed with
   /// `struct` or `union`, depending on whether the declaration is a typedef.
@@ -54,7 +52,6 @@ abstract class Compound extends BindingType {
     super.dartDoc,
     List<Member>? members,
     super.isInternal,
-    this.objCBuiltInFunctions,
     String? nativeType,
   })  : members = members ?? [],
         nativeType = nativeType ?? originalName ?? name;
@@ -68,7 +65,6 @@ abstract class Compound extends BindingType {
     int? pack,
     String? dartDoc,
     List<Member>? members,
-    ObjCBuiltInFunctions? objCBuiltInFunctions,
     String? nativeType,
   }) {
     switch (type) {
@@ -81,7 +77,6 @@ abstract class Compound extends BindingType {
           pack: pack,
           dartDoc: dartDoc,
           members: members,
-          objCBuiltInFunctions: objCBuiltInFunctions,
           nativeType: nativeType,
         );
       case CompoundType.union:
@@ -93,7 +88,6 @@ abstract class Compound extends BindingType {
           pack: pack,
           dartDoc: dartDoc,
           members: members,
-          objCBuiltInFunctions: objCBuiltInFunctions,
           nativeType: nativeType,
         );
     }
@@ -107,15 +101,10 @@ abstract class Compound extends BindingType {
     return type.getInteropDartType(w);
   }
 
-  bool get _isBuiltIn =>
-      objCBuiltInFunctions?.getBuiltInCompoundName(originalName) != null;
-
+  @override
   BindingString toBindingString(Writer w) {
     final bindingType =
         isStruct ? BindingStringType.struct : BindingStringType.union;
-    if (_isBuiltIn) {
-      return BindingString(type: bindingType, string: '');
-    }
 
     final s = StringBuffer();
     final enclosingClassName = name;
@@ -160,10 +149,15 @@ abstract class Compound extends BindingType {
 
         constructorParams.add('required this.${m.name}');
       } else {
-        final memberName =
-            m.type.sameDartAndFfiDartType ? m.name : '${m.name}AsInt';
-        s.write(
-            '${depth}final ${m.type.getInteropDartType(w)} $memberName;\n\n');
+        final memberName = m.name;
+
+        if (m.type case final PointerType ptrType) {
+           s.write(
+              '${depth}final ${m.type.getDartType(w)} $memberName;\n\n');
+        } else {
+          s.write(
+              '${depth}final ${m.type.getInteropDartType(w)} $memberName;\n\n');
+        }
 
         constructorParams.add('this.$memberName');
       }
@@ -195,7 +189,7 @@ abstract class Compound extends BindingType {
 
   @override
   void addDependencies(Set<Binding> dependencies) {
-    if (dependencies.contains(this) || _isBuiltIn) return;
+    if (dependencies.contains(this)) return;
 
     dependencies.add(this);
     for (final m in members) {
@@ -208,9 +202,7 @@ abstract class Compound extends BindingType {
 
   @override
   String getInteropDartType(Writer w) {
-    final builtInName =
-        objCBuiltInFunctions?.getBuiltInCompoundName(originalName);
-    return builtInName != null ? '${w.objcPkgPrefix}.$builtInName' : name;
+    return name;
   }
 
   @override

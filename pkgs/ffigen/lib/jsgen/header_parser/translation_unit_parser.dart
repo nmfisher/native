@@ -10,8 +10,6 @@ import 'data.dart';
 import 'includer.dart';
 import 'sub_parsers/functiondecl_parser.dart';
 import 'sub_parsers/macro_parser.dart';
-import 'sub_parsers/objcinterfacedecl_parser.dart';
-import 'sub_parsers/objcprotocoldecl_parser.dart';
 import 'sub_parsers/typedefdecl_parser.dart';
 import 'sub_parsers/var_parser.dart';
 import 'type_extractor/extractor.dart';
@@ -34,15 +32,6 @@ Set<Binding> parseTranslationUnit(clang_types.CXCursor translationUnitCursor) {
           case clang_types.CXCursorKind.CXCursor_StructDecl:
           case clang_types.CXCursorKind.CXCursor_UnionDecl:
           case clang_types.CXCursorKind.CXCursor_EnumDecl:
-          case clang_types.CXCursorKind.CXCursor_ObjCInterfaceDecl:
-            addToBindings(bindings, _getCodeGenTypeFromCursor(cursor));
-            break;
-          case clang_types.CXCursorKind.CXCursor_ObjCCategoryDecl:
-            addToBindings(bindings, parseObjCCategoryDeclaration(cursor));
-            break;
-          case clang_types.CXCursorKind.CXCursor_ObjCProtocolDecl:
-            addToBindings(bindings, parseObjCProtocolDeclaration(cursor));
-            break;
           case clang_types.CXCursorKind.CXCursor_MacroDefinition:
             saveMacroDefinition(cursor);
             break;

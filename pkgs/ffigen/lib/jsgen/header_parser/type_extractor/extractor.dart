@@ -15,8 +15,6 @@ import '../data.dart';
 import '../sub_parsers/compounddecl_parser.dart';
 import '../sub_parsers/enumdecl_parser.dart';
 import '../sub_parsers/function_type_param_parser.dart';
-import '../sub_parsers/objc_block_parser.dart';
-import '../sub_parsers/objcinterfacedecl_parser.dart';
 import '../sub_parsers/typedefdecl_parser.dart';
 import '../type_extractor/cxtypekindmap.dart';
 import '../utils.dart';
@@ -49,28 +47,6 @@ Type getCodeGenType(
         ignoreFilter: ignoreFilter, pointerReference: pointerReference);
   }
 
-  // These basic Objective C types skip the cache, and are conditional on the
-  // language flag.
-  if (config.language == Language.objc) {
-    switch (cxtype.kind) {
-      case clang_types.CXTypeKind.CXType_ObjCObjectPointer:
-        final pt = clang.clang_getPointeeType(cxtype);
-        final s = getCodeGenType(pt,
-            ignoreFilter: ignoreFilter, pointerReference: true);
-        if (s is ObjCInterface) {
-          return s;
-        }
-        return PointerType(objCObjectType);
-      case clang_types.CXTypeKind.CXType_ObjCId:
-      case clang_types.CXTypeKind.CXType_ObjCTypeParam:
-      case clang_types.CXTypeKind.CXType_ObjCClass:
-        return PointerType(objCObjectType);
-      case clang_types.CXTypeKind.CXType_ObjCSel:
-        return PointerType(objCSelType);
-      case clang_types.CXTypeKind.CXType_BlockPointer:
-        return parseObjCBlock(cxtype);
-    }
-  }
 
   // If the type has a declaration cursor, then use the BindingsIndex to break
   // any potential cycles, and dedupe the Type.
@@ -144,6 +120,8 @@ Type getCodeGenType(
       return NativeType(SupportedNativeType.voidType);
     case clang_types.CXTypeKind.CXType_Int:
       return NativeType(SupportedNativeType.int32);
+    case clang_types.CXTypeKind.CXType_Long:
+      return NativeType(SupportedNativeType.int64);
     case clang_types.CXTypeKind.CXType_Float:
       return NativeType(SupportedNativeType.float);
     case clang_types.CXTypeKind.CXType_Double:
@@ -160,9 +138,7 @@ Type getCodeGenType(
       );
       final isNullable = clang.clang_Type_getNullability(cxtype) ==
           clang_types.CXTypeNullabilityKind.CXTypeNullability_Nullable;
-      return isNullable && ObjCNullable.isSupported(innerType)
-          ? ObjCNullable(innerType)
-          : innerType;
+      return innerType;
     default:
       var typeSpellKey =
           clang.clang_getTypeSpelling(cxtype).toStringAndDispose();
@@ -257,9 +233,6 @@ _CreateTypeFromCursorResult _createTypeFromCursor(clang_types.CXType cxtype,
       } else {
         return _CreateTypeFromCursorResult(enumClass);
       }
-    case clang_types.CXTypeKind.CXType_ObjCInterface:
-      return _CreateTypeFromCursorResult(
-          parseObjCInterfaceDeclaration(cursor, ignoreFilter: ignoreFilter));
     default:
       return _CreateTypeFromCursorResult(
           UnimplementedType('Unknown type: ${cxtype.completeStringRepr()}'),
@@ -273,9 +246,7 @@ void _fillFromCursorIfNeeded(Type? type, clang_types.CXCursor cursor,
   if (type is Compound) {
     fillCompoundMembersIfNeeded(type, cursor,
         ignoreFilter: ignoreFilter, pointerReference: pointerReference);
-  } else if (type is ObjCInterface) {
-    fillObjCInterfaceMethodsIfNeeded(type, cursor);
-  }
+  } 
 }
 
 Type? _extractfromRecord(clang_types.CXType cxtype, clang_types.CXCursor cursor,

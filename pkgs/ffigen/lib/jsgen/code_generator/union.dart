@@ -36,7 +36,6 @@ class Union extends Compound {
     super.pack,
     super.dartDoc,
     super.members,
-    super.objCBuiltInFunctions,
     super.nativeType,
   }) : super(compoundType: CompoundType.union);
   

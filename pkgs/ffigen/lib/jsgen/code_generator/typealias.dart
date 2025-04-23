@@ -42,18 +42,7 @@ class Typealias extends BindingType {
         isInternal: isInternal,
       )));
     }
-    if ((originalName ?? name) == strings.objcInstanceType &&
-        type is ObjCObjectPointer) {
-      return ObjCInstanceType._(
-        usr: usr,
-        originalName: originalName,
-        dartDoc: dartDoc,
-        name: name,
-        type: type,
-        genFfiDartType: genFfiDartType,
-        isInternal: isInternal,
-      );
-    }
+    
     return Typealias._(
       usr: usr,
       originalName: originalName,
@@ -144,44 +133,6 @@ class Typealias extends BindingType {
     }
   }
 
-  @override
-  String getObjCBlockSignatureType(Writer w) =>
-      type.getObjCBlockSignatureType(w);
-
-
-  @override
-  bool get sameDartAndFfiDartType => type.sameDartAndFfiDartType;
-
-  @override
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      type.convertDartTypeToFfiDartType(
-        w,
-        value,
-        objCRetain: objCRetain,
-        objCAutorelease: objCAutorelease,
-      );
-
-  @override
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      type.convertFfiDartTypeToDartType(
-        w,
-        value,
-        objCRetain: objCRetain,
-        objCEnclosingClass: objCEnclosingClass,
-      );
-
-  @override
-  String? generateRetain(String value) => type.generateRetain(value);
 
   @override
   String cacheKey() => type.cacheKey();
@@ -227,32 +178,7 @@ class ObjCInstanceType extends Typealias {
     super.isInternal,
   }) : super._();
 
-  @override
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      ObjCInterface.generateGetId(value, objCRetain, objCAutorelease);
-
-  @override
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      objCEnclosingClass == null
-          ? super.convertFfiDartTypeToDartType(
-              w,
-              value,
-              objCRetain: objCRetain,
-              objCEnclosingClass: objCEnclosingClass,
-            )
-          : ObjCInterface.generateConstructor(
-              objCEnclosingClass, value, objCRetain);
-
+  
   @override
   String getNativeType({String varName = ''}) => 'id $varName';
 }

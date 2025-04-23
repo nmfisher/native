@@ -220,11 +220,13 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
           type: PointerType(originalReturnType),
           objCConsumed: false);
       interopArgumentConstructors.add(
-          "final ${outParam.name} = _stackAlloc<${structType.name}>(${structType.sizeInBytes});");
+          'final ${outParam.name} = _stackAlloc<${structType.name}>(${structType.sizeInBytes});');
 
       interopArguments.insert(0, outParam);
 
       var outFieldNames = <String>[];
+
+      var offset = 0;
 
       for (final field in structType.members) {
         if (field.type is! NativeType && field.type is! PointerType) {
@@ -232,6 +234,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         }
 
         late String jsToDart;
+        String wrapper = "";
         final dartType = field.type.getDartType(w);
         if (dartType == 'double') {
           jsToDart = '.toDartDouble';
@@ -240,14 +243,16 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         } else if (field.type is PointerType) {
           final ptrType = field.type as PointerType;
           final inner = ptrType.child.getWasmType(w);
-          jsToDart = '.toDartInt as PointerAddress<$inner>';
+          wrapper = 'Pointer(';
+          jsToDart = '.toDartInt as PointerAddress<$inner>, this)';
         }
 
         var fieldName = '${structName}_${field.name}';
         outFieldNames.add(fieldName);
 
         interopReturnTypeConstructors.add(
-            "final $fieldName = getValue(${outParam.name}, '${field.type.llvmType}')$jsToDart;");
+            "final $fieldName = ${wrapper}getValue(${outParam.name} + ${offset}, '${field.type.llvmType}')$jsToDart;");
+        offset += field.type.sizeInBytes;
       }
       interopReturnTypeConstructors.add(
           "return ${originalReturnType.getDartType(w)}(${outFieldNames.join(',')});");
@@ -291,32 +296,6 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
             final result = $interopFunctionName($invokeInteropArgsString);
             ${interopReturnTypeConstructors.join("\n")}
 }''');
-    // s.write(return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(','))
-    // s.write(return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(','))
-
-    //       $structArgumentAllocator
-    //       final out = stackAlloc<${originalReturnType.getDartType(w)}>($structSize);
-    //       _$name(out, $forwardArgsString);
-    //       $fieldAllocators
-
-    //       return ${originalReturnType.getDartType(w)}(${fieldConstructorArgs.join(',')});
-    //     }''');
-    // } else {
-    //   final argDeclString = functionType.dartTypeParameters
-    //       .map((p) => '${p.type.getInteropDartType(w)} ${p.name},\n')
-    //       .join('');
-    //   final forwardArgsString =
-    //       functionType.dartTypeParameters.map((p) => "${p.name},").join('');
-
-    //   final nativeFuncName = name;
-    //   s.write(
-    //       '''external ${functionType.returnType.getInteropDartType(w)} _$nativeFuncName($argDeclString);''');
-    //   s.write(
-    //       '''${functionType.returnType.getInteropDartType(w)} $nativeFuncName($argDeclString) {
-    //       $structArgumentAllocator
-    //       return _$nativeFuncName($forwardArgsString);
-    //     }''');
-    // }
 
     return BindingString(type: BindingStringType.func, string: s.toString());
   }

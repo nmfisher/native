@@ -131,7 +131,6 @@ Compound? parseCompoundDeclaration(
         name: incrementalNamer.name('Unnamed$className'),
         usr: declUsr,
         dartDoc: getCursorDocComment(cursor),
-        objCBuiltInFunctions: objCBuiltInFunctions,
         nativeType: cursor.type().spelling(),
       );
     } else {
@@ -147,7 +146,6 @@ Compound? parseCompoundDeclaration(
       originalName: declName,
       name: configDecl.rename(decl),
       dartDoc: getCursorDocComment(cursor),
-      objCBuiltInFunctions: objCBuiltInFunctions,
       nativeType: cursor.type().spelling(),
     );
   }

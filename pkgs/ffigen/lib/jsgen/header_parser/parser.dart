@@ -35,7 +35,6 @@ Library parse(Config c) {
     libraryImports: c.libraryImports.values.toList(),
     silenceEnumWarning: c.silenceEnumWarning,
     nativeEntryPoints: c.entryPoints.map((uri) => uri.toFilePath()).toList(),
-    objCBuiltInFunctions: objCBuiltInFunctions,
   );
 
   return library;

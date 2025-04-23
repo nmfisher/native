@@ -69,12 +69,7 @@ class FunctionType extends Type {
     final arg = dartTypeParameters.map<String>((p) => p.type.getNativeType());
     return '${returnType.getNativeType()} (*$varName)(${arg.join(', ')})';
   }
-
-  @override
-  bool get sameDartAndFfiDartType =>
-      returnType.sameDartAndFfiDartType &&
-      dartTypeParameters.every((p) => p.type.sameDartAndFfiDartType);
-
+    
   @override
   String toString() => _getTypeImpl(false, (Type t) => t.toString());
 

@@ -52,13 +52,6 @@ abstract class Type {
   /// as getInteropDartType. For ObjC bindings this refers to the wrapper object.
   String getDartType(Writer w) => getInteropDartType(w);
 
-  /// Returns the type to be used if this type appears in an ObjC block
-  /// signature. By default it's the same as [getInteropDartType]. But for some types
-  /// that's not enough to distinguish them (eg all ObjC objects have a C type
-  /// of `Pointer<objc.ObjCObject>`), so we use [getDartType] instead.
-  String getObjCBlockSignatureType(Writer w) =>
-      throw UnsupportedError('No mapping for type: $this');
-
   /// Returns the C/ObjC type of the Type. This is the type as it appears in
   /// C/ObjC source code. It should not be used in Dart source code.
   ///
@@ -67,42 +60,6 @@ abstract class Type {
   /// argument, the syntax is `int (^arg)(int)`, where arg is the [varName].
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
-
-  /// Returns whether the dart type and FFI dart type string are same.
-  bool get sameDartAndFfiDartType => true;
-
-  /// Returns generated Dart code that converts the given value from its
-  /// DartType to its FfiDartType.
-  ///
-  /// [value] is the value to be converted. If [objCRetain] is true, the ObjC
-  /// object will be reained (ref count incremented) during conversion.
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      value;
-
-  /// Returns generated Dart code that converts the given value from its
-  /// FfiDartType to its DartType.
-  ///
-  /// [value] is the value to be converted. If [objCRetain] is true, the ObjC
-  /// wrapper object will retain (ref count increment) the wrapped object
-  /// pointer. If this conversion is occuring in the context of an ObjC class,
-  /// then [objCEnclosingClass] should be the name of the Dart wrapper class
-  /// (this is used by instancetype).
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      value;
-
-  /// Returns generated ObjC code that retains a reference to the given value.
-  /// Returns null if the Type does not need to be retained.
-  String? generateRetain(String value) => null;
 
   /// Returns a human readable string representation of the Type. This is mostly
   /// just for debugging, but it may also be used for non-functional code (eg to
@@ -162,36 +119,9 @@ abstract class BindingType extends NoLookUpBinding implements Type {
   String getDartType(Writer w) => getInteropDartType(w);
 
   @override
-  String getObjCBlockSignatureType(Writer w) =>
-      throw UnsupportedError('No mapping for type: $this');
-
-  @override
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
 
-  @override
-  bool get sameDartAndFfiDartType => true;
-
-  @override
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      value;
-
-  @override
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      value;
-
-  @override
-  String? generateRetain(String value) => null;
 
   @override
   String toString() => originalName;

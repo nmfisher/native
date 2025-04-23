@@ -49,34 +49,13 @@ class Global extends LookUpBinding {
     final ffiDartType = type.getInteropDartType(w);
     final cType = type.getInteropDartType(w);
 
-    void generateConvertingGetterAndSetter(String pointerValue) {
-      final getValue =
-          type.convertFfiDartTypeToDartType(w, pointerValue, objCRetain: true);
-      s.write('$dartType get $globalVarName => $getValue;\n\n');
-      if (!constant) {
-        final releaseOldValue = type
-            .convertFfiDartTypeToDartType(w, pointerValue, objCRetain: false);
-        final newValue = type.convertDartTypeToFfiDartType(
-          w,
-          'value',
-          objCRetain: true,
-          objCAutorelease: false,
-        );
-        s.write('''set $globalVarName($dartType value) {
-  $releaseOldValue.ref.release();
-  $pointerValue = $newValue;
-}''');
-      }
-    }
-
     if (nativeConfig.enabled) {
       if (type case final ConstantArray arr) {
         s.writeln(makeArrayAnnotation(w, arr));
       }
 
-      final pointerName = type.sameDartAndFfiDartType
-          ? globalVarName
-          : w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
+      final pointerName =
+          w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
 
       s
         ..writeln(makeNativeAnnotation(
@@ -92,10 +71,6 @@ class Global extends LookUpBinding {
       }
 
       s.writeln('$ffiDartType $pointerName;\n');
-
-      if (!type.sameDartAndFfiDartType) {
-        generateConvertingGetterAndSetter(pointerName);
-      }
 
       if (exposeSymbolAddress) {
         w.symbolAddressWriter.addNativeSymbol(
@@ -115,14 +90,8 @@ class Global extends LookUpBinding {
         } else {
           s.write('$ffiDartType get $globalVarName => $pointerName.ref;\n\n');
         }
-      } else if (type.sameDartAndFfiDartType) {
-        s.write('$dartType get $globalVarName => $pointerName.value;\n\n');
-        if (!constant) {
-          s.write('set $globalVarName($dartType value) =>'
-              '$pointerName.value = value;\n\n');
-        }
       } else {
-        generateConvertingGetterAndSetter('$pointerName.value');
+        throw UnimplementedError();
       }
 
       if (exposeSymbolAddress) {

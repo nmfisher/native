@@ -72,15 +72,6 @@ bool shouldIncludeTypealias(Declaration declaration) {
       declaration, bindingsIndex.isSeenType, config.typedefs.shouldInclude);
 }
 
-bool shouldIncludeObjCInterface(Declaration declaration) {
-  return _shouldIncludeDecl(declaration, bindingsIndex.isSeenType,
-      config.objcInterfaces.shouldInclude);
-}
-
-bool shouldIncludeObjCProtocol(Declaration declaration) {
-  return _shouldIncludeDecl(declaration, bindingsIndex.isSeenObjCProtocol,
-      config.objcProtocols.shouldInclude);
-}
 
 /// True if a cursor should be included based on headers config, used on root
 /// declarations.

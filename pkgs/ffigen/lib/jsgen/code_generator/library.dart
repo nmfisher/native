@@ -20,7 +20,6 @@ class Library {
   /// List of bindings in this library.
   late List<Binding> bindings;
 
-  final ObjCBuiltInFunctions? objCBuiltInFunctions;
 
   late Writer _writer;
   Writer get writer => _writer;
@@ -36,7 +35,6 @@ class Library {
     List<LibraryImport>? libraryImports,
     bool silenceEnumWarning = false,
     List<String> nativeEntryPoints = const <String>[],
-    this.objCBuiltInFunctions,
   }) {
     _findBindings(bindings, sort);
 
@@ -108,7 +106,6 @@ class Library {
     for (final b in original) {
       b.addDependencies(dependencies);
     }
-    objCBuiltInFunctions?.addDependencies(dependencies);
 
     /// Save bindings.
     bindings = dependencies.toList();

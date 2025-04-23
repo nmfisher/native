@@ -60,11 +60,11 @@ class ImportedType extends Type {
 
   @override
   String? getDefaultValue(Writer w) => defaultValue;
-  
+
   @override
   // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
-  
+
   @override
   // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
@@ -73,25 +73,19 @@ class ImportedType extends Type {
 /// An unchecked type similar to [ImportedType] which exists in the generated
 /// binding itself.
 class SelfImportedType extends Type {
-  final String cType;
+  final String interopDartType;
   final String dartType;
-  final String? defaultValue;
+  final String llvmType;
+  final int sizeInBytes;
 
-  SelfImportedType(this.cType, this.dartType, [this.defaultValue]);
-
-  @override
-  String getInteropDartType(Writer w) => cType;
+  SelfImportedType(this.interopDartType, this.dartType, this.llvmType, this.sizeInBytes);
 
   @override
-  String toString() => cType;
-  
+  String getInteropDartType(Writer w) => interopDartType;
+
   @override
-  // TODO: implement llvmType
-  String get llvmType => throw UnimplementedError();
-  
-  @override
-  // TODO: implement sizeInBytes
-  int get sizeInBytes => throw UnimplementedError();
+  String toString() => interopDartType;
+
 }
 
 final pkgWebImport = LibraryImport('pkg_web', 'package:web/web.dart');
@@ -107,33 +101,4 @@ final self = LibraryImport('self', '');
 
 final voidType = ImportedType(jsInteropUnsafeImport, 'Void', 'void', 'void');
 
-final unsignedCharType =
-    ImportedType(jsInteropUnsafeImport, 'UnsignedChar', 'int', 'unsigned char', '0');
-final signedCharType =
-    ImportedType(jsInteropUnsafeImport, 'SignedChar', 'int', 'char', '0');
-final charType = SelfImportedType('char', 'Char', 'char');
-final unsignedShortType =
-    ImportedType(jsInteropUnsafeImport, 'UnsignedShort', 'int', 'unsigned short', '0');
-final shortType = ImportedType(jsInteropUnsafeImport, 'Short', 'int', 'short', '0');
-final unsignedIntType =
-    ImportedType(jsInteropUnsafeImport, 'UnsignedInt', 'int', 'unsigned', '0');
-final unsignedLongType =
-    ImportedType(jsInteropUnsafeImport, 'UnsignedLong', 'int', 'unsigned long', '0');
-final longType = ImportedType(jsInteropUnsafeImport, 'Long', 'int', 'long', '0');
-final unsignedLongLongType = ImportedType(
-    jsInteropUnsafeImport, 'UnsignedLongLong', 'int', 'unsigned long long', '0');
-final longLongType =
-    ImportedType(jsInteropUnsafeImport, 'LongLong', 'int', 'long long', '0');
 
-final floatType = ImportedType(jsInteropUnsafeImport, 'Float', 'double', 'float', '0.0');
-final doubleType = ImportedType(jsInteropUnsafeImport, 'Double', 'double', 'double', '0.0');
-
-final sizeType = ImportedType(jsInteropUnsafeImport, 'Size', 'int', 'size_t', '0');
-final wCharType = ImportedType(jsInteropUnsafeImport, 'WChar', 'int', 'wchar_t', '0');
-
-final objCObjectType =
-    ImportedType(objcPkgImport, 'ObjCObject', 'ObjCObject', 'void');
-final objCSelType = ImportedType(
-    objcPkgImport, 'ObjCSelector', 'ObjCSelector', 'objc_selector');
-final objCBlockType =
-    ImportedType(objcPkgImport, 'ObjCBlockImpl', 'ObjCBlockImpl', 'id');

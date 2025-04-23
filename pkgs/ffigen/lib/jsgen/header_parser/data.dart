@@ -4,7 +4,7 @@
 
 import 'dart:ffi';
 
-import '../code_generator.dart' show Constant, ObjCBuiltInFunctions;
+import '../code_generator.dart' show Constant;
 import '../config_provider.dart' show Config;
 import 'clang_bindings/clang_bindings.dart' show Clang;
 
@@ -40,10 +40,6 @@ Map<String, Macro> _savedMacros = {};
 List<Constant> get unnamedEnumConstants => _unnamedEnumConstants;
 List<Constant> _unnamedEnumConstants = [];
 
-/// Built in functions used by the Objective C bindings.
-ObjCBuiltInFunctions get objCBuiltInFunctions => _objCBuiltInFunctions;
-late ObjCBuiltInFunctions _objCBuiltInFunctions;
-
 /// Tracks if any source error/warning has occured which can potentially cause
 /// invalid generated bindings.
 bool hasSourceErrors = false;
@@ -56,7 +52,5 @@ void initializeGlobals({required Config config}) {
   _unnamedEnumConstants = [];
   _cursorIndex = CursorIndex();
   _bindingsIndex = BindingsIndex();
-  _objCBuiltInFunctions =
-      ObjCBuiltInFunctions(config.generateForPackageObjectiveC);
   hasSourceErrors = false;
 }

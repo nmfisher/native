@@ -194,7 +194,8 @@ Type makeTypeFromRawVarArgType(
     final rawVarArgTypeSplit = rawBaseType.split('.');
     if (rawVarArgTypeSplit.length == 1) {
       final typeName = rawVarArgTypeSplit[0].replaceAll(' ', '');
-      baseType = SelfImportedType(typeName, typeName);
+      // baseType = SelfImportedType(typeName, typeName);
+      throw UnimplementedError();
     } else if (rawVarArgTypeSplit.length == 2) {
       final lib = rawVarArgTypeSplit[0];
       final libraryImport = strings.predefinedLibraryImports[lib] ??

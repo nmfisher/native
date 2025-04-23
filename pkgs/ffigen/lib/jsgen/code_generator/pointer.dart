@@ -16,9 +16,6 @@ class PointerType extends Type {
   PointerType._(this.child);
 
   factory PointerType(Type child) {
-    if (child == objCObjectType) {
-      return ObjCObjectPointer();
-    }
     return PointerType._(child);
   }
 
@@ -35,8 +32,13 @@ class PointerType extends Type {
       '${w.selfImportPrefix}.PointerAddress<${child.getWasmType(w)}>';
 
   @override
-  String getDartType(Writer w) =>
-      '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
+  String getDartType(Writer w) {
+    if (child.getDartType(w) == 'Char') {
+      return '${w.selfImportPrefix}.Pointer<Char>';
+    } else {
+      return '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
+    }
+  }
 
   @override
   String getNativeType({String varName = ''}) =>
@@ -101,40 +103,4 @@ class IncompleteArray extends PointerType {
   String cacheKey() => '${child.cacheKey()}[]';
 }
 
-/// A pointer to an Objective C object.
-class ObjCObjectPointer extends PointerType {
-  factory ObjCObjectPointer() => _inst;
 
-  static final _inst = ObjCObjectPointer._();
-  ObjCObjectPointer._() : super._(objCObjectType);
-
-  @override
-  String getDartType(Writer w) => '${w.objcPkgPrefix}.ObjCObjectBase';
-
-  @override
-  String getNativeType({String varName = ''}) => 'id $varName';
-
-  @override
-  bool get sameDartAndFfiDartType => false;
-
-  @override
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      ObjCInterface.generateGetId(value, objCRetain, objCAutorelease);
-
-  @override
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      '${getDartType(w)}($value, retain: $objCRetain, release: true)';
-
-  @override
-  String? generateRetain(String value) => 'objc_retain($value)';
-}

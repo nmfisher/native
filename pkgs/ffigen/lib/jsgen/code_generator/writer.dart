@@ -293,6 +293,8 @@ import 'dart:js_interop_unsafe';
 
 sealed class NativeType<T> {}
 
+class Char extends NativeType<int> {}
+
 class Int32 extends NativeType<int> {}
 
 class Int64 extends NativeType<int> {}
@@ -312,6 +314,17 @@ extension type PointerAddress<T extends NativeType>(int addr) {
   PointerAddress<U> cast<U  extends NativeType>() => this as PointerAddress<U>;
 }
 
+extension CharPtr on Pointer<Char> {
+  void setValue(String value) {
+    var len = module._lengthBytesUTF8(value);
+    module._stringToUTF8(value, this.addr, len);
+  }
+
+  String getValue() {
+    return module._UTF8ToString(this.addr);
+  }
+}
+
 class Pointer<T extends NativeType> {
   final NativeLibrary module;
   final PointerAddress<T> addr;
@@ -321,6 +334,7 @@ class Pointer<T extends NativeType> {
     Float => "float",
     Int32 => "i32",
     Int64 => "i64",
+    Char => "i32",
     _ => throw UnsupportedError("TODO")
   };
 
@@ -369,6 +383,15 @@ extension DoublePtr on Pointer<Double> {
   }
 }
 
+extension StringUtils on String {
+  self.Pointer<Char> toNativePointer(NativeLibrary module) {
+    var len = module._lengthBytesUTF8(this) + 1;
+    var ptr = module._stackAlloc<Char>(len);
+    module._stringToUTF8(this, ptr, len);
+    return Pointer<Char>(ptr, module);
+  }
+}
+
 
 extension type NativeLibrary(JSObject _) implements JSObject {
   @JS('stackAlloc')
@@ -392,10 +415,16 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external void setValue(
       self.PointerAddress addr, JSNumber value, String llvmType);
 
-  external JSString intArrayToString(JSAny ptr);
-  external JSString UTF8ToString(JSAny ptr);
-  external void stringToUTF8(
-      JSString str, JSNumber ptr, JSNumber maxBytesToWrite);
+  @JS("lengthBytesUTF8")
+  external int _lengthBytesUTF8(String str);
+
+  @JS("UTF8ToString")
+  external String _UTF8ToString(self.PointerAddress<Char> ptr);
+
+  @JS("stringToUTF8")
+  external void _stringToUTF8(
+      String str, self.PointerAddress<Char> ptr, int maxBytesToWrite);
+
   external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
 
   external self.PointerAddress<NativeFunction> addFunction(

@@ -7,7 +7,6 @@ import 'package:collection/collection.dart';
 import 'binding.dart';
 import 'binding_string.dart';
 import 'imports.dart';
-import 'objc_built_in_functions.dart';
 import 'type.dart';
 import 'utils.dart';
 import 'writer.dart';
@@ -50,8 +49,6 @@ class EnumClass extends BindingType {
   /// Generates new names for all members that don't equal [name].
   final UniqueNamer namer;
 
-  ObjCBuiltInFunctions? objCBuiltInFunctions;
-
   /// Whether this enum should be generated as a collection of integers.
   bool generateAsInt;
 
@@ -62,7 +59,6 @@ class EnumClass extends BindingType {
     super.dartDoc,
     required Type nativeType,
     List<EnumConstant>? enumConstants,
-    this.objCBuiltInFunctions,
     this.generateAsInt = false,
   })  : nativeType = nativeType,
         enumConstants = enumConstants ?? [],
@@ -230,8 +226,7 @@ class EnumClass extends BindingType {
     s.write('$depth};\n');
   }
 
-  bool get _isBuiltIn =>
-      objCBuiltInFunctions?.isBuiltInEnum(originalName) ?? false;
+  bool get _isBuiltIn => false;
 
   @override
   BindingString toBindingString(Writer w) {
@@ -280,7 +275,6 @@ class EnumClass extends BindingType {
     return nativeType.getInteropDartType(w);
   }
 
-
   @override
   String getDartType(Writer w) {
     if (_isBuiltIn) {
@@ -296,37 +290,17 @@ class EnumClass extends BindingType {
   String getNativeType({String varName = ''}) => '$originalName $varName';
 
   @override
-  bool get sameDartAndFfiDartType => generateAsInt;
-
-  @override
   String? getDefaultValue(Writer w) => '0';
-
+  
   @override
-  String convertDartTypeToFfiDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    required bool objCAutorelease,
-  }) =>
-      sameDartAndFfiDartType ? value : '$value.value';
-
+  // TODO: implement llvmType
+  String get llvmType => throw UnimplementedError();
+  
   @override
-  String convertFfiDartTypeToDartType(
-    Writer w,
-    String value, {
-    required bool objCRetain,
-    String? objCEnclosingClass,
-  }) =>
-      sameDartAndFfiDartType ? value : '${getDartType(w)}.fromValue($value)';
-      
-        @override
-        // TODO: implement llvmType
-        String get llvmType => throw UnimplementedError();
-      
-        @override
-        // TODO: implement sizeInBytes
-        int get sizeInBytes => throw UnimplementedError();
+  // TODO: implement sizeInBytes
+  int get sizeInBytes => throw UnimplementedError();
 }
+
 
 /// Represents a single value in an enum.
 class EnumConstant {

@@ -64,7 +64,10 @@ class NativeType extends Type {
 
   @override
   String getWasmType(Writer w) {
-     switch (wasmType) {
+    if (_nativeType == 'char') {
+      return 'Char';
+    }
+    switch (wasmType) {
       case 'i':
         return 'Int32';
       case 'j':

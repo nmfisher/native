@@ -16,12 +16,7 @@ export 'code_generator/handle.dart';
 export 'code_generator/imports.dart';
 export 'code_generator/library.dart';
 export 'code_generator/native_type.dart';
-export 'code_generator/objc_block.dart';
-export 'code_generator/objc_built_in_functions.dart';
-export 'code_generator/objc_interface.dart';
-export 'code_generator/objc_methods.dart';
-export 'code_generator/objc_nullable.dart';
-export 'code_generator/objc_protocol.dart';
+
 export 'code_generator/pointer.dart';
 export 'code_generator/struct.dart';
 export 'code_generator/type.dart';
