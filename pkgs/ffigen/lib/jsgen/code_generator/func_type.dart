@@ -58,7 +58,7 @@ class FunctionType extends Type {
   @override
   String getInteropDartType(Writer w, {bool writeArgumentNames = true}) =>
       _getTypeImpl(writeArgumentNames, (Type t) => t.getInteropDartType(w),
-          varArgWrapper: '${w.ffiLibraryPrefix}.VarArgs');
+          varArgWrapper: '${w.selfImportPrefix}.VarArgs');
 
   @override
   String getDartType(Writer w, {bool writeArgumentNames = true}) =>

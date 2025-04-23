@@ -278,7 +278,7 @@ class EnumClass extends BindingType {
   @override
   String getDartType(Writer w) {
     if (_isBuiltIn) {
-      return '${w.objcPkgPrefix}.$name';
+      return '${w.selfImportPrefix}.$name';
     } else if (generateAsInt) {
       return nativeType.getDartType(w);
     } else {

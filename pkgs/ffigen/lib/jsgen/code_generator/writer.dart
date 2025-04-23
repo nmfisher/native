@@ -18,43 +18,19 @@ class Writer {
   /// Holds bindings, which lookup symbols.
   final List<Binding> lookUpBindings;
 
-  /// Holds bindings, which lookup symbols through `FfiNative`.
-  final List<Binding> ffiNativeBindings;
-
   /// Holds bindings which don't lookup symbols.
   final List<Binding> noLookUpBindings;
-
-  /// The default asset id to use for [ffiNativeBindings].
-  final String? nativeAssetId;
-
-  /// Manages the `_SymbolAddress` class.
-  final symbolAddressWriter = SymbolAddressWriter();
 
   late String _className;
   String get className => _className;
 
   final String? classDocComment;
 
-  final bool generateForPackageObjectiveC;
-
   final List<String> nativeEntryPoints;
 
   /// Tracks where enumType.getInteropDartType is called. Reset everytime [generate] is
   /// called.
   bool usedEnumCType = false;
-
-  String? _ffiLibraryPrefix;
-  String get ffiLibraryPrefix {
-    if (_ffiLibraryPrefix != null) {
-      return _ffiLibraryPrefix!;
-    }
-
-    final import = _usedImports.firstWhere(
-        (element) => element.name == ffiImport.name,
-        orElse: () => ffiImport);
-    // _usedImports.add(import);
-    return _ffiLibraryPrefix = import.prefix;
-  }
 
   String? _pkgWebLibraryPrefix;
   String get pkgWebLibraryPrefix {
@@ -82,32 +58,6 @@ class Writer {
     return _jsInteropLibraryPrefix = import.prefix;
   }
 
-  String? _ffiPkgLibraryPrefix;
-  String get ffiPkgLibraryPrefix {
-    if (_ffiPkgLibraryPrefix != null) {
-      return _ffiPkgLibraryPrefix!;
-    }
-
-    final import = _usedImports.firstWhere(
-        (element) => element.name == ffiPkgImport.name,
-        orElse: () => ffiPkgImport);
-    // _usedImports.add(import);
-    return _ffiPkgLibraryPrefix = import.prefix;
-  }
-
-  String? _objcPkgPrefix;
-  String get objcPkgPrefix {
-    if (_objcPkgPrefix != null) {
-      return _objcPkgPrefix!;
-    }
-
-    final import = _usedImports.firstWhere(
-        (element) => element.name == objcPkgImport.name,
-        orElse: () => objcPkgImport);
-    _usedImports.add(import);
-    return _objcPkgPrefix = import.prefix;
-  }
-
   late String selfImportPrefix = () {
     final import = _usedImports
         .firstWhere((element) => element.name == self.name, orElse: () => self);
@@ -133,8 +83,6 @@ class Writer {
   UniqueNamer get topLevelUniqueNamer => _topLevelUniqueNamer;
   late UniqueNamer _wrapperLevelUniqueNamer;
   UniqueNamer get wrapperLevelUniqueNamer => _wrapperLevelUniqueNamer;
-  late UniqueNamer _objCLevelUniqueNamer;
-  UniqueNamer get objCLevelUniqueNamer => _objCLevelUniqueNamer;
 
   late String _arrayHelperClassPrefix;
 
@@ -150,14 +98,11 @@ class Writer {
 
   Writer({
     required this.lookUpBindings,
-    required this.ffiNativeBindings,
     required this.noLookUpBindings,
     required String className,
-    required this.nativeAssetId,
     List<LibraryImport>? additionalImports,
     this.classDocComment,
     this.header,
-    required this.generateForPackageObjectiveC,
     required this.silenceEnumWarning,
     required this.nativeEntryPoints,
   }) {
@@ -244,11 +189,17 @@ class Writer {
   void _resetUniqueNamersNamers() {
     _topLevelUniqueNamer = _initialTopLevelUniqueNamer.clone();
     _wrapperLevelUniqueNamer = _initialWrapperLevelUniqueNamer.clone();
-    _objCLevelUniqueNamer = UniqueNamer({});
   }
 
   void markImportUsed(LibraryImport import) {
     _usedImports.add(import);
+  }
+
+  final _structs = <Struct>{};
+
+  void markStruct(Struct type) {
+    _structs.add(type);
+    print("ADDED $type");
   }
 
   /// Writes all bindings to a String.
@@ -392,22 +343,14 @@ extension StringUtils on String {
   }
 }
 
-
 extension type NativeLibrary(JSObject _) implements JSObject {
   @JS('stackAlloc')
   external self.PointerAddress<T> _stackAlloc<T extends NativeType>(int numBytes);
   self.Pointer<T> stackAlloc<T extends NativeType>(int count) {
-    int numBytes = 0;
-    switch (T) {
-      case Int32:
-      case Float:
-        numBytes = 4;
-      case Pointer:
-      case Int64:
-      case Double:
-        numBytes = 8;
+    if (!_sizes.containsKey(T)) {
+      throw UnsupportedError(T.toString());
     }
-    var addr = _stackAlloc<T>(numBytes * count);
+    var addr = _stackAlloc<T>(_sizes[T]! * count);
     return Pointer<T>(addr, this);
   }
 
@@ -439,25 +382,18 @@ extension type NativeLibrary(JSObject _) implements JSObject {
       for (final b in lookUpBindings) {
         s.write(b.toBindingString(this).string);
       }
-      if (symbolAddressWriter.shouldGenerate) {
-        s.write(symbolAddressWriter.writeObject(this));
-      }
-
       s.write('}\n\n');
-    }
 
-    if (ffiNativeBindings.isNotEmpty) {
-      for (final b in ffiNativeBindings) {
-        s.write(b.toBindingString(this).string);
-      }
-
-      if (symbolAddressWriter.shouldGenerate) {
-        s.write(symbolAddressWriter.writeObject(this));
-      }
-    }
-
-    if (symbolAddressWriter.shouldGenerate) {
-      s.write(symbolAddressWriter.writeClass(this));
+      s.write('''
+final _sizes = <Type, int>{
+  Int32: 4,
+  Float: 4,
+  Pointer:4,
+  Int64:4,
+  Double:4,
+  ${_structs.map((s) => "${s.name} : ${s.sizeInBytes}").join(",\n")}
+  };
+''');
     }
 
     /// Write [noLookUpBindings].
@@ -467,8 +403,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
 
     // Write neccesary imports.
     for (final lib in _usedImports) {
-      final path = lib.importPath(generateForPackageObjectiveC);
-      print("IMPORT PATH $path");
+      final path = lib.importPath();
       result.write("import '$path' as ${lib.prefix};\n");
     }
     result.write(s);
@@ -490,7 +425,6 @@ extension type NativeLibrary(JSObject _) implements JSObject {
 
   List<Binding> get _allBindings => <Binding>[
         ...noLookUpBindings,
-        ...ffiNativeBindings,
         ...lookUpBindings,
       ];
 

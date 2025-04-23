@@ -183,9 +183,11 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         var paramConstructor =
             "final $argPtrName = _stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n";
 
+        int offset = 0;
         for (final paramMember in paramType.members) {
           paramConstructor +=
-              "setValue($argPtrName, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+              "setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+          offset += paramMember.type.sizeInBytes;
         }
         interopArgumentConstructors.add(paramConstructor);
         interopArguments.add(Parameter(

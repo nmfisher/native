@@ -9,14 +9,11 @@ import 'writer.dart';
 class LibraryImport {
   final String name;
   final String _importPath;
-  final String? _importPathWhenImportedByPackageObjC;
 
   String prefix;
 
-  LibraryImport(this.name, this._importPath,
-      {String? importPathWhenImportedByPackageObjC})
-      : _importPathWhenImportedByPackageObjC =
-            importPathWhenImportedByPackageObjC,
+  LibraryImport(this.name, this._importPath)
+      : 
         prefix = name;
 
   @override
@@ -29,9 +26,8 @@ class LibraryImport {
 
   // The import path, which may be different if this library is being imported
   // into package:objective_c's generated code.
-  String importPath(bool generateForPackageObjectiveC) {
-    if (!generateForPackageObjectiveC) return _importPath;
-    return _importPathWhenImportedByPackageObjC ?? _importPath;
+  String importPath() {
+    return _importPath;
   }
 }
 
@@ -58,15 +54,11 @@ class ImportedType extends Type {
   @override
   String toString() => '${libraryImport.name}.$cType';
 
-  @override
-  String? getDefaultValue(Writer w) => defaultValue;
 
   @override
-  // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
 
   @override
-  // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
 }
 
@@ -92,11 +84,6 @@ final pkgWebImport = LibraryImport('pkg_web', 'package:web/web.dart');
 final jsInteropImport = LibraryImport('js_interop', 'dart:js_interop');
 final jsInteropUnsafeImport = LibraryImport('js_interop', 'dart:js_interop');
 
-final ffiImport = LibraryImport('ffi', 'dart:ffi');
-final ffiPkgImport = LibraryImport('pkg_ffi', 'package:ffi/ffi.dart');
-final objcPkgImport = LibraryImport(
-    'objc', 'package:objective_c/objective_c.dart',
-    importPathWhenImportedByPackageObjC: '../objective_c.dart');
 final self = LibraryImport('self', '');
 
 final voidType = ImportedType(jsInteropUnsafeImport, 'Void', 'void', 'void');

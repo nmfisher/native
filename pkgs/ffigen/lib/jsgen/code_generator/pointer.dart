@@ -78,7 +78,8 @@ class ConstantArray extends PointerType {
   @override
   String getInteropDartType(Writer w) {
     if (useArrayType) {
-      return '${w.ffiLibraryPrefix}.Array<${child.getInteropDartType(w)}>';
+      throw UnimplementedError();
+      // return '${w.ffiLibraryPrefix}.Array<${child.getInteropDartType(w)}>';
     }
 
     return super.getInteropDartType(w);
@@ -102,5 +103,3 @@ class IncompleteArray extends PointerType {
   @override
   String cacheKey() => '${child.cacheKey()}[]';
 }
-
-

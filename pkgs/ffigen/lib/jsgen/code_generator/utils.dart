@@ -110,7 +110,7 @@ String makeNativeAnnotation(
   }
 
   final combinedArgs = args.map((e) => '${e.$1}: ${e.$2}').join(', ');
-  return '@${w.ffiLibraryPrefix}.Native<$nativeType>($combinedArgs)';
+  return '@${w.selfImportPrefix}.Native<$nativeType>($combinedArgs)';
 }
 
 String makeArrayAnnotation(Writer w, ConstantArray arrayType) {
@@ -121,7 +121,7 @@ String makeArrayAnnotation(Writer w, ConstantArray arrayType) {
     type = type.child;
   }
 
-  return '@${w.ffiLibraryPrefix}.Array.multi([${dimensions.join(', ')}])';
+  return '@${w.selfImportPrefix}.Array.multi([${dimensions.join(', ')}])';
 }
 
 /// 32-bit FNV-1a hash function.

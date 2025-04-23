@@ -13,7 +13,7 @@ class HandleType extends Type {
   factory HandleType() => _handle;
 
   @override
-  String getInteropDartType(Writer w) => '${w.ffiLibraryPrefix}.Handle';
+  String getInteropDartType(Writer w) => '${w.selfImportPrefix}.Handle';
 
   // The real native type is Dart_Handle, but that would mean importing
   // dart_api.h into the generated native code.

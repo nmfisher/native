@@ -23,7 +23,6 @@ import 'writer.dart';
 /// ```
 class Global extends LookUpBinding {
   final Type type;
-  final bool exposeSymbolAddress;
   final FfiNativeConfig nativeConfig;
   final bool constant;
 
@@ -33,7 +32,6 @@ class Global extends LookUpBinding {
     required super.name,
     required this.type,
     super.dartDoc,
-    this.exposeSymbolAddress = false,
     this.constant = false,
     this.nativeConfig = const FfiNativeConfig(enabled: false),
   });
@@ -71,37 +69,24 @@ class Global extends LookUpBinding {
       }
 
       s.writeln('$ffiDartType $pointerName;\n');
-
-      if (exposeSymbolAddress) {
-        w.symbolAddressWriter.addNativeSymbol(
-            type: '${w.ffiLibraryPrefix}.Pointer<$cType>', name: name);
-      }
     } else {
-      final pointerName =
-          w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
+      throw UnimplementedError();
+      // final pointerName =
+      //     w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
 
-      s.write('late final ${w.ffiLibraryPrefix}.Pointer<$cType> $pointerName = '
-          "${w.lookupFuncIdentifier}<$cType>('$originalName');\n\n");
-      final baseTypealiasType = type.typealiasType;
-      if (baseTypealiasType is Compound) {
-        if (baseTypealiasType.isOpaque) {
-          s.write('${w.ffiLibraryPrefix}.Pointer<$cType> get $globalVarName =>'
-              ' $pointerName;\n\n');
-        } else {
-          s.write('$ffiDartType get $globalVarName => $pointerName.ref;\n\n');
-        }
-      } else {
-        throw UnimplementedError();
-      }
-
-      if (exposeSymbolAddress) {
-        // Add to SymbolAddress in writer.
-        w.symbolAddressWriter.addSymbol(
-          type: '${w.ffiLibraryPrefix}.Pointer<$cType>',
-          name: name,
-          ptrName: pointerName,
-        );
-      }
+      // s.write('late final ${w.ffiLibraryPrefix}.Pointer<$cType> $pointerName = '
+      //     "${w.lookupFuncIdentifier}<$cType>('$originalName');\n\n");
+      // final baseTypealiasType = type.typealiasType;
+      // if (baseTypealiasType is Compound) {
+      //   if (baseTypealiasType.isOpaque) {
+      //     s.write('${w.ffiLibraryPrefix}.Pointer<$cType> get $globalVarName =>'
+      //         ' $pointerName;\n\n');
+      //   } else {
+      //     s.write('$ffiDartType get $globalVarName => $pointerName.ref;\n\n');
+      //   }
+      // } else {
+      //   throw UnimplementedError();
+      // }
     }
 
     return BindingString(type: BindingStringType.global, string: s.toString());

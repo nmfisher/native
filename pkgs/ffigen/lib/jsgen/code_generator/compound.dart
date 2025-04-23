@@ -95,7 +95,7 @@ abstract class Compound extends BindingType {
 
   String _getInlineArrayTypeString(Type type, Writer w) {
     if (type is ConstantArray) {
-      return '${w.ffiLibraryPrefix}.Array<'
+      return '${w.selfImportPrefix}.Array<'
           '${_getInlineArrayTypeString(type.child, w)}>';
     }
     return type.getInteropDartType(w);
@@ -124,7 +124,7 @@ abstract class Compound extends BindingType {
 
     /// Write @Packed(X) annotation if struct is packed.
     if (isStruct && pack != null) {
-      s.write('@${w.ffiLibraryPrefix}.Packed($pack)\n');
+      s.write('@${w.selfImportPrefix}.Packed($pack)\n');
     }
     final dartClassName = isStruct ? 'Struct' : 'Union';
     // Write class declaration.

@@ -87,14 +87,13 @@ class Library {
 
     _writer = Writer(
       lookUpBindings: lookupBindings,
-      ffiNativeBindings: nativeBindings,
-      nativeAssetId: nativeConfig?.assetId,
+
       noLookUpBindings: noLookUpBindings,
       className: name,
       classDocComment: description,
       header: header,
       additionalImports: libraryImports,
-      generateForPackageObjectiveC: generateForPackageObjectiveC,
+
       silenceEnumWarning: silenceEnumWarning,
       nativeEntryPoints: nativeEntryPoints,
     );
