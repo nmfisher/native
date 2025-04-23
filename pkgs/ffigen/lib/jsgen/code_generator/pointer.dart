@@ -32,7 +32,7 @@ class PointerType extends Type {
 
   @override
   String getFfiDartType(Writer w) =>
-      '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
+      '${w.selfImportPrefix}.PointerAddress<${child.getDartType(w)}>';
 
   @override
   String getNativeType({String varName = ''}) =>

@@ -292,15 +292,44 @@ class Writer {
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+sealed class Int32 {}
+sealed class Int64 {}
+sealed class Float {}
 sealed class Char {}
-
 sealed class Void {}
-
 sealed class NativeFunction<T> {}
 
-extension type Pointer<T>(int addr) {
-  Pointer<T> operator +(int offset) => Pointer<T>(addr + offset);
-  Pointer<U> cast<U>() => this as Pointer<U>;
+extension type PointerAddress<T>(int addr) {
+  PointerAddress<T> operator +(int offset) => PointerAddress<T>(addr + offset);
+  PointerAddress<U> cast<U>() => this as PointerAddress<U>;
+}
+
+class Pointer<T,U> {
+  final NativeLibrary module;
+  final PointerAddress<U> addr;
+
+  Pointer(this.addr, this.module);
+
+  T get value { 
+    final llvmType = switch (U) {
+      double => "double",
+      Float => "float",
+      Int32 => "i32",
+      Int64 => "i64",
+      _ => throw UnsupportedError("TODO")
+    };
+    var jsValue = module.getValue(this.addr, llvmType);
+    switch (T) {
+      case Float:
+      case double:
+        return jsValue.toDartDouble as T;
+      case Int64:
+      case Int32:
+        return jsValue.toDartInt as T;
+      default:
+        throw UnimplementedError();
+    }
+  }
 }
 
 abstract class Struct {
@@ -309,9 +338,9 @@ abstract class Struct {
 
 extension type $_className(JSObject _) implements JSObject { 
 
-  external self.Pointer<T> stackAlloc<T>(int numBytes);
-  external JSNumber getValue(self.Pointer addr, String llvmType);
-  external void setValue(self.Pointer addr, JSNumber value, String llvmType);
+  external self.PointerAddress<T> stackAlloc<T>(int numBytes);
+  external JSNumber getValue(self.PointerAddress addr, String llvmType);
+  external void setValue(self.PointerAddress addr, JSNumber value, String llvmType);
 
   external JSString intArrayToString(JSAny ptr);
   external JSString UTF8ToString(JSAny ptr);
@@ -319,8 +348,8 @@ extension type $_className(JSObject _) implements JSObject {
       JSString str, JSNumber ptr, JSNumber maxBytesToWrite);
   external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
 
-  external Pointer<NativeFunction> addFunction(JSFunction f, String signature);
-  external void removeFunction(Pointer<NativeFunction> f);
+  external self.PointerAddress<NativeFunction> addFunction(JSFunction f, String signature);
+  external void removeFunction(self.PointerAddress<NativeFunction> f);
   external JSAny get ALLOC_STACK;
   external JSAny get HEAPU32;
   external JSAny get HEAP32;

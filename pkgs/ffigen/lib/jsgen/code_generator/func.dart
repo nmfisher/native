@@ -1,6 +1,7 @@
 // Copyright (c) 2020, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import 'dart:ffi';
 import 'dart:math';
 
 import '../code_generator.dart';
@@ -136,6 +137,7 @@ class Func extends LookUpBinding {
     final interopFunctionName = "_$name";
     final userFunctionName = name;
 
+    var userReturnType = functionType.returnType.getDartType(w);
     var interopReturnType = functionType.returnType.getDartType(w);
 
     final interopArguments = <Parameter>[];
@@ -162,11 +164,9 @@ class Func extends LookUpBinding {
 
         final interopFnPtrName = '${param.name}_interopFnPtr';
         interopArguments.add(Parameter(
-          name: interopFnPtrName,
-          type: param.type, objCConsumed: false));
+            name: interopFnPtrName, type: param.type, objCConsumed: false));
 
         final wasmSignature = (paramType.baseType as NativeFunc).wasmSignature;
-        
 
         final paramConstructor = '''
 final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''';
@@ -237,7 +237,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         } else if (field.type is PointerType) {
           final ptrType = field.type as PointerType;
           final inner = ptrType.child.getDartType(w);
-          jsToDart = '.toDartInt as Pointer<$inner>';
+          jsToDart = '.toDartInt as PointerAddress<$inner>';
         }
 
         var fieldName = '${structName}_${field.name}';
@@ -248,6 +248,18 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
       }
       interopReturnTypeConstructors.add(
           "return ${originalReturnType.getDartType(w)}(${outFieldNames.join(',')});");
+      // if the return type is a PointerAddress, we need to wrap inside a Pointer
+    } else if (functionType.returnType is PointerType) {
+      var ptrType = functionType.returnType as PointerType;
+      var wrappedType = ptrType.baseType;
+      var dartType = wrappedType.getDartType(w);
+      if (wrappedType is! NativeType) {
+        throw UnimplementedError();
+      }
+      
+      userReturnType = 'Pointer<$dartType, ${wrappedType.wasmTypeDartRepresentation}>';
+      interopReturnTypeConstructors
+          .add('return $userReturnType(result, this);');
     } else {
       interopReturnTypeConstructors.add('return result;');
     }
@@ -258,13 +270,15 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
     final interopArgsString = interopArguments
         .map((p) => '${p.type.getFfiDartType(w)} ${p.name},\n')
         .join('');
-    final invokeInteropArgsString =
-        interopArguments.map((p) => p.type.baseType is NativeFunc ? '${p.name}.cast(),' :  "${p.name},").join('');
+    final invokeInteropArgsString = interopArguments
+        .map((p) =>
+            p.type.baseType is NativeFunc ? '${p.name}.cast(),' : "${p.name},")
+        .join('');
 
     s.write(
         '''external $interopReturnType $interopFunctionName($interopArgsString);''');
     s.write(
-        '''${functionType.returnType.getFfiDartType(w)} $userFunctionName($userArgsString) {
+        '''$userReturnType $userFunctionName($userArgsString) {
             ${interopArgumentConstructors.join("\n")}
             final result = $interopFunctionName($invokeInteropArgsString);
             ${interopReturnTypeConstructors.join("\n")}

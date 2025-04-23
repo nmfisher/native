@@ -37,23 +37,42 @@ class NativeType extends Type {
     SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'i32', 'i'),
     SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 8, 'i64', 'j'),
     SupportedNativeType.float: NativeType._('double', 'float', 4, 'float', 'f'),
-    SupportedNativeType.double: NativeType._('double', 'double', 8, 'double', 'd'),
+    SupportedNativeType.double:
+        NativeType._('double', 'double', 8, 'double', 'd'),
     SupportedNativeType.intPtr: NativeType._('int', 'intptr_t', 8, '*', 'p'),
     SupportedNativeType.uintPtr: NativeType._('int', 'uintptr_t', 8, '*', 'p'),
   };
 
   final String _dartType;
   final String _nativeType;
-  
+
   @override
   final int sizeInBytes;
-  
+
   @override
   final String llvmType;
 
   final String wasmType;
-  
-  const NativeType._(this._dartType, this._nativeType, this.sizeInBytes, this.llvmType, this.wasmType);
+
+  String get wasmTypeDartRepresentation {
+    switch (wasmType) {
+      case 'i':
+        return 'Int32';
+      case 'j':
+        return 'Int64';
+      case 'f':
+        return 'Float';
+      case 'd':
+        return 'double';
+      case 'p':
+        return 'PointerAddress';
+      default:
+        throw UnimplementedError(wasmType);
+    }
+  }
+
+  const NativeType._(this._dartType, this._nativeType, this.sizeInBytes,
+      this.llvmType, this.wasmType);
 
   factory NativeType(SupportedNativeType type) => _primitives[type]!;
 
@@ -68,8 +87,6 @@ class NativeType extends Type {
 
   @override
   String cacheKey() => _dartType;
-
-  
 }
 
 class BooleanType extends NativeType {
