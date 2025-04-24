@@ -71,9 +71,6 @@ class FunctionType extends Type {
   }
     
   @override
-  String toString() => _getTypeImpl(false, (Type t) => t.toString());
-
-  @override
   String cacheKey() => _getTypeImpl(false, (Type t) => t.cacheKey());
 
   @override
@@ -101,11 +98,9 @@ class FunctionType extends Type {
   }
 
   @override
-  // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
 
   @override
-  // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
 }
 

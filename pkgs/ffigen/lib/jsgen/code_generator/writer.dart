@@ -312,7 +312,7 @@ class Array<T extends NativeType> extends NativeType<Array> {
   }
 
   void setValue(Uint8List data) {
-    module.writeArrayToMemory(data, start);
+    module.writeArrayToMemory(data.toJS, start);
   }
 
   Array(this.numElements, this.start, this.module);
@@ -342,7 +342,8 @@ class Pointer<T extends NativeType> extends NativeType<int> {
     Pointer => "*",
     _ => T.toString().startsWith("Pointer")
         ? "*"
-        : throw UnimplementedError(T.toString())
+        : "s"
+        // throw UnimplementedError("Failed to get LLVM IR type for \$T")
   };
 
   Pointer(this.addr, this.module);
@@ -440,7 +441,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external void _stringToUTF8(
       String str, _PtrType<Char> ptr, int maxBytesToWrite);
 
-  external void writeArrayToMemory(Uint8List data, _PtrType ptr);
+  external void writeArrayToMemory(JSUint8Array data, _PtrType ptr);
 
   external _PtrType<NativeFunction> addFunction(
       JSFunction f, String signature);

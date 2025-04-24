@@ -155,6 +155,7 @@ class Func extends LookUpBinding {
       // 2) inside the user-facing function, construct an interop type with
       //    addFunction
       if (paramType.baseType is NativeFunc) {
+        final paramFnType = paramType.baseType as NativeFunc;
         final userParam = Parameter(
             name: param.name,
             originalName: param.originalName,
@@ -163,13 +164,31 @@ class Func extends LookUpBinding {
         userArguments.add(userParam);
 
         final interopFnPtrName = '${param.name}_interopFnPtr';
-        interopArguments.add(Parameter(
-            name: interopFnPtrName, type: param.type, objCConsumed: false));
+        final interopFnPtrParam = Parameter(
+            name: interopFnPtrName, type: param.type, objCConsumed: false);
+        interopArguments.add(interopFnPtrParam);
 
         final wasmSignature = (paramType.baseType as NativeFunc).wasmSignature;
 
+        final internalFnName = "${param.name}_internal";
+        var internalFnType = paramFnType.type.getInteropDartType(w);
+        var internalFnArgsSignature = paramFnType.type.parameters
+            .map((p) => "${p.name}_internal")
+            .join(",");
+        var forwardInternalFnArgs = <String>[];
+        for (final param in paramFnType.type.parameters) {
+          if (param.type is PointerType) {
+            forwardInternalFnArgs.add("Pointer(${param.name}_internal, this)");
+          } else {
+            forwardInternalFnArgs.add("${param.name}_internal");
+          }
+        }
+
         final paramConstructor = '''
-final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''';
+$internalFnType $internalFnName  = ($internalFnArgsSignature) {
+  ${param.name}(${forwardInternalFnArgs.join(',')});
+};
+final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");\n''';
         interopArgumentConstructors.add(paramConstructor);
 
         // if the argument is a struct:
@@ -187,7 +206,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         for (final paramMember in paramType.members) {
           if (paramMember.type is ConstantArray) {
             paramConstructor +=
-                'writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List(), $argPtrName + $offset);';
+                'writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, $argPtrName + $offset);';
           } else {
             paramConstructor +=
                 "setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
