@@ -79,7 +79,7 @@ class NativeType extends Type {
       case 'p':
         return '_PtrType';
       case 'v':
-        return 'void';
+        return 'Void';
       default:
         throw UnimplementedError(wasmType);
     }
