@@ -1,5 +1,6 @@
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+import 'dart:typed_data';
 import '../lib/generated_bindings.dart';
 
 void main(List<String> args) {
@@ -7,52 +8,75 @@ void main(List<String> args) {
 
   final module = globalContext.getProperty('module'.toJS) as NativeLibrary;
 
-  // final intPointer = module.stackAlloc<Int32>(1);
-  // intPointer.setValue(11);
-  // final floatPointer = module.stackAlloc<Float>(1);
-  // floatPointer.setValue(0.1);
+  final intPointer = module.stackAlloc<Int32>(1);
+  intPointer.setValue(11);
+  final floatPointer = module.stackAlloc<Float>(1);
+  floatPointer.setValue(0.1);
 
-  // assert((floatPointer.getValue() - 0.1).abs() < 0.00001);
-  // assert(module.sum(1, 2) == 3);
+  assert((floatPointer.getValue() - 0.1).abs() < 0.00001);
+  assert(module.sum(1, 2) == 3);
 
-  // assert(module.subtract(intPointer, 2) == 9);
+  assert(module.subtract(intPointer, 2) == 9);
 
-  // assert((module.divide(10, 2).getValue() - 5.0).abs() < 0.0001);
+  assert((module.divide(10, 2).getValue() - 5.0).abs() < 0.0001);
 
-  // var result = module.dividePrecision(floatPointer, floatPointer);
-  // assert(result.getValue() == 1.0);
+  var result = module.dividePrecision(floatPointer, floatPointer);
+  assert(result.getValue() == 1.0);
 
-  // var copy = module.copy_string('MY STRING'.toNativePointer(module));
-  // assert(copy.getValue() == 'MY STRING', copy.getValue());
+  var copy = module.copy_string('MY STRING'.toNativePointer(module));
+  assert(copy.getValue() == 'MY STRING', copy.getValue());
 
-  // var myStruct = module.returnStructByValue(10.0, copy);
-  // assert(myStruct.a == 10.0);
-  // assert(myStruct.b.getValue() == 'MY STRING', myStruct.b.getValue());
+  var myStruct = module.returnStructByValue(10.0, copy);
+  assert(myStruct.a == 10.0);
+  assert(myStruct.b.getValue() == 'MY STRING', myStruct.b.getValue());
 
-  // var structArg = double3(1.0, 2.0, 3.0);
-  // assert(
-  //     module.structArgument(structArg) == 6, module.structArgument(structArg));
-  // print("structArgument");
-  // var done = false;
-  // module.voidFunctionArgument(() {
-  //   done = true;
-  // });
-  // done = false;
+  var structArg = double3(1.0, 2.0, 3.0);
+  assert(
+      module.structArgument(structArg) == 6, module.structArgument(structArg));
+  print("structArgument");
+  var done = false;
+  module.voidFunctionArgument(() {
+    done = true;
+  });
+  done = false;
 
-  // module.functionArgument((intVal) {
-  //   print(intVal + 10);
-  //   done = true;
-  // });
-  // assert(done);
+  module.functionArgument((intVal) {
+    print(intVal + 10);
+    done = true;
+  });
+  assert(done);
 
-  // print("Function argument completed");
+  print("Function argument completed");
 
-  // final ptrArray = module.stackAlloc<Int32>(2);
-  // ptrArray.setValue(2);
-  // (ptrArray + 1).setValue(3);
-  // assert(ptrArray.getValue() == 2);
-  // assert((ptrArray + 1).getValue() == 3, (ptrArray + 1).getValue());
+  final ptrArray = module.stackAlloc<Int32>(2);
+  ptrArray.setValue(2);
+  (ptrArray + 1).setValue(3);
+  assert(ptrArray.getValue() == 2);
+  assert((ptrArray + 1).getValue() == 3, (ptrArray + 1).getValue());
 
+  var arrayPtr = module.return_array();
+  for (int i = 0; i < 4; i++) {
+    final val = (arrayPtr + i).getValue();
+    assert(val == (i + 1).toDouble());
+  }
+  var array = Array<Double>(4, arrayPtr.addr, module);
+
+  var len = array.asUint8List().length;
+  var arrayDoubleData = array
+      .asUint8List()
+      .buffer
+      .asFloat64List(array.asUint8List().offsetInBytes, array.numElements);
+  assert(arrayDoubleData[0] == 1.0, arrayDoubleData[0]);
+  assert(arrayDoubleData[1] == 2.0, arrayDoubleData[1]);
+  assert(arrayDoubleData[2] == 3.0, arrayDoubleData[2]);
+  assert(arrayDoubleData[3] == 4.0, arrayDoubleData[3]);
+
+  array.setValue(
+      Float64List.fromList([10.0, 11.0, 12.0, 13.0]).buffer.asUint8List());
+  for (int i = 0; i < 4; i++) {
+    final val = (arrayPtr + i).getValue();
+    assert(val == (i + 10).toDouble());
+  }
   final ptrA = module.stackAlloc<Int32>(1);
   ptrA.setValue(10);
   final ptrptrA = module.stackAlloc<Pointer<Int32>>(1);
@@ -65,7 +89,7 @@ void main(List<String> args) {
   var ptrptrResult = module.ptr_ptr(ptrptrA, ptrptrB);
 
   print(
-      'addr 0 ${ptrptrResult.getValue().addr} addr 1 ${(ptrptrResult +1).getValue().addr}');
+      'addr 0 ${ptrptrResult.getValue().addr} addr 1 ${(ptrptrResult + 1).getValue().addr}');
 
   final val1 = ptrptrResult.getValue().getValue();
   assert(val1 == 20, val1);
