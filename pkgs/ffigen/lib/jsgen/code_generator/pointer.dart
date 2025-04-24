@@ -85,13 +85,8 @@ class ConstantArray extends PointerType {
   String cacheKey() => '${child.cacheKey()}[$length]';
 
   @override
-  String getInteropDartType(Writer w) {
-    if (useArrayType) {
-      throw UnimplementedError();
-      // return '${w.ffiLibraryPrefix}.Array<${child.getInteropDartType(w)}>';
-    }
-
-    return super.getInteropDartType(w);
+  String getDartType(Writer w) {
+      return 'Array<${child.getWasmType(w)}>';
   }
 
   @override

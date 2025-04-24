@@ -187,7 +187,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         for (final paramMember in paramType.members) {
           if (paramMember.type is ConstantArray) {
             paramConstructor +=
-                "// TODO - write array to struct member array ptr;\n";
+                'writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List(), $argPtrName + $offset);';
           } else {
             paramConstructor +=
                 "setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
@@ -244,7 +244,11 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         String wrapper = '';
         final dartType = field.type.getDartType(w);
 
-        if (dartType == 'double') {
+        if (field.type is ConstantArray) {
+          var arrayType = field.type as ConstantArray;
+          wrapper = "${arrayType.getDartType(w)}(${arrayType.length}, ";
+          jsToDart = ".toDartInt as _PtrType, this)";
+        } else if (dartType == 'double') {
           jsToDart = '.toDartDouble';
         } else if (dartType == 'int') {
           jsToDart = '.toDartInt';

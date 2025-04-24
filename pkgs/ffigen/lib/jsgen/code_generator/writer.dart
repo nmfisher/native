@@ -312,10 +312,7 @@ class Array<T extends NativeType> extends NativeType<Array> {
   }
 
   void setValue(Uint8List data) {
-    var length = numElements * sizeOf<T>();
-    Uint8List.sublistView(
-            module.HEAPU8.toDart, start as int, (start as int) + length)
-        .setRange(0, data.lengthInBytes, data);
+    module.writeArrayToMemory(data, start);
   }
 
   Array(this.numElements, this.start, this.module);
@@ -443,7 +440,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external void _stringToUTF8(
       String str, _PtrType<Char> ptr, int maxBytesToWrite);
 
-  external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
+  external void writeArrayToMemory(Uint8List data, _PtrType ptr);
 
   external _PtrType<NativeFunction> addFunction(
       JSFunction f, String signature);
