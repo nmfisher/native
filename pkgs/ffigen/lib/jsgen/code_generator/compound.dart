@@ -95,10 +95,10 @@ abstract class Compound extends BindingType {
 
   String _getInlineArrayTypeString(Type type, Writer w) {
     if (type is ConstantArray) {
-      return '${w.selfImportPrefix}.Array<'
+      return 'Array<'
           '${_getInlineArrayTypeString(type.child, w)}>';
     }
-    return type.getInteropDartType(w);
+    return type.getWasmType(w);
   }
 
   @override
@@ -143,11 +143,11 @@ abstract class Compound extends BindingType {
         s.write('\n');
       }
       if (m.type case final ConstantArray arrayType) {
-        s.writeln(makeArrayAnnotation(w, arrayType));
-        s.write('${depth}external ${_getInlineArrayTypeString(m.type, w)} ');
+        
+        s.write('${depth}${_getInlineArrayTypeString(m.type, w)} ');
         s.write('${m.name};\n\n');
 
-        constructorParams.add('required this.${m.name}');
+        constructorParams.add('this.${m.name}');
       } else {
         final memberName = m.name;
 

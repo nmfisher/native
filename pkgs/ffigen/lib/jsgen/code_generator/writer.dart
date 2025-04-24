@@ -199,7 +199,6 @@ class Writer {
 
   void markStruct(Struct type) {
     _structs.add(type);
-    print("ADDED $type");
   }
 
   /// Writes all bindings to a String.
@@ -239,6 +238,7 @@ class Writer {
       // Write wrapper classs.
 
       s.write('''
+import 'dart:typed_data';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
@@ -251,7 +251,7 @@ import 'dart:js_interop_unsafe';
 /// compile-time type information and to translate between native types and
 /// their Dart equivalent.
 ///
-/// The exceptions are [Pointer] and sub-classes of [Struct]; these can be
+/// The exceptions are [Pointer], [Array] and sub-classes of [Struct]; these can be
 /// instantiated and returned to the user.
 ///
 /// Sub-classes doesn't necessarily represent a singular WASM type; for example,
@@ -300,6 +300,27 @@ abstract class Struct extends NativeType {}
 
 class Opaque extends Struct {}
 
+class Array<T extends NativeType> extends NativeType<Array> {
+  final int numElements;
+  final _PtrType start;
+  final NativeLibrary module;
+
+  Uint8List asUint8List() {
+    var length = numElements * sizeOf<T>();
+    return Uint8List.sublistView(
+        module.HEAPU8.toDart, start as int, (start as int) + length);
+  }
+
+  void setValue(Uint8List data) {
+    var length = numElements * sizeOf<T>();
+    Uint8List.sublistView(
+            module.HEAPU8.toDart, start as int, (start as int) + length)
+        .setRange(0, data.lengthInBytes, data);
+  }
+
+  Array(this.numElements, this.start, this.module);
+}
+
 extension CharPtr on Pointer<Char> {
   void setValue(String value) {
     var len = module._lengthBytesUTF8(value);
@@ -330,7 +351,7 @@ class Pointer<T extends NativeType> extends NativeType<int> {
   Pointer(this.addr, this.module);
 
   Pointer<T> operator +(int offset) =>
-      Pointer<T>(addr + (offset * sizeOf<Pointer>()), module);
+      Pointer<T>(addr + (offset * sizeOf<T>()), module);
   Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
 }
 
@@ -427,9 +448,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external _PtrType<NativeFunction> addFunction(
       JSFunction f, String signature);
   external void removeFunction(_PtrType<NativeFunction> f);
-  external JSAny get ALLOC_STACK;
-  external JSAny get HEAPU32;
-  external JSAny get HEAP32;
+  external JSUint8Array get HEAPU8;
 
 ''');
       s.write('\n');

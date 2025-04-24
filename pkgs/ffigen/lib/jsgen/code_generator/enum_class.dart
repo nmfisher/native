@@ -288,16 +288,12 @@ class EnumClass extends BindingType {
 
   @override
   String getNativeType({String varName = ''}) => '$originalName $varName';
-
-  @override
-  String? getDefaultValue(Writer w) => '0';
   
   @override
-  // TODO: implement llvmType
+
   String get llvmType => throw UnimplementedError();
   
   @override
-  // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
 }
 

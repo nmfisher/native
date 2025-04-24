@@ -113,16 +113,6 @@ String makeNativeAnnotation(
   return '@${w.selfImportPrefix}.Native<$nativeType>($combinedArgs)';
 }
 
-String makeArrayAnnotation(Writer w, ConstantArray arrayType) {
-  final dimensions = <int>[];
-  Type type = arrayType;
-  while (type is ConstantArray) {
-    dimensions.add(type.length);
-    type = type.child;
-  }
-
-  return '@${w.selfImportPrefix}.Array.multi([${dimensions.join(', ')}])';
-}
 
 /// 32-bit FNV-1a hash function.
 int fnvHash32(String input) {

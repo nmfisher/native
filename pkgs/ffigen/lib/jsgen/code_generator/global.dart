@@ -49,7 +49,7 @@ class Global extends LookUpBinding {
 
     if (nativeConfig.enabled) {
       if (type case final ConstantArray arr) {
-        s.writeln(makeArrayAnnotation(w, arr));
+        throw UnimplementedError();
       }
 
       final pointerName =

@@ -93,6 +93,9 @@ class ConstantArray extends PointerType {
 
     return super.getInteropDartType(w);
   }
+
+  @override
+  int get sizeInBytes => length * baseArrayType.sizeInBytes;
 }
 
 /// Represents an incomplete array, which has an unknown size.
