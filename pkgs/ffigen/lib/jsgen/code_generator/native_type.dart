@@ -77,7 +77,9 @@ class NativeType extends Type {
       case 'd':
         return 'Double';
       case 'p':
-        return 'PointerAddress';
+        return '_PtrType';
+      case 'v':
+        return 'void';
       default:
         throw UnimplementedError(wasmType);
     }

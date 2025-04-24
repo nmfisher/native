@@ -14,6 +14,15 @@ int EMSCRIPTEN_KEEPALIVE sum(int a, int b) {
     return a + b;
 }
 
+int ** EMSCRIPTEN_KEEPALIVE ptr_ptr(int **a, int **b) {
+    int **out = (int **)malloc(sizeof(int*) * 2);
+    out[0] = (int *)malloc(sizeof(int*));
+    out[1] = (int *)malloc(sizeof(int*));
+    *out[0] = **b;
+    *out[1] = **a;
+    return out;
+}
+
 /** Subtracts 2 integers. */
 int EMSCRIPTEN_KEEPALIVE subtract(int *a, int b) {
     return *a - b;
@@ -47,13 +56,11 @@ const char *EMSCRIPTEN_KEEPALIVE copy_string(const char *instr) {
 }
 
 MyStruct EMSCRIPTEN_KEEPALIVE returnStructByValue(float a, const char *b) {
-    emscripten_console_log("returnStructByValue");
     MyStruct result;
     result.a = a;
     
     // Allocate and copy the string to ensure it persists
     char *str_copy = (char *)malloc(strlen(b) + 1);
-    emscripten_console_logf("ptr : %d", str_copy);
     strcpy(str_copy, b);
     result.b = str_copy;
     

@@ -28,17 +28,26 @@ class PointerType extends Type {
   Type get baseType => child.baseType;
 
   @override
-  String getInteropDartType(Writer w) =>
-      '${w.selfImportPrefix}.PointerAddress<${child.getWasmType(w)}>';
+  String getInteropDartType(Writer w) {
+    if (child is PointerType) {
+      return '_PtrType<${child.getDartType(w)}>';
+    }
+    return '_PtrType<${child.getWasmType(w)}>';
+  }
 
   @override
   String getDartType(Writer w) {
-    if (child.getDartType(w) == 'Char') {
+    if (child == NativeType(SupportedNativeType.char)) {
       return '${w.selfImportPrefix}.Pointer<Char>';
+    } else if (child is PointerType) {
+      return '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
     } else {
       return '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
     }
   }
+
+  @override
+  String getWasmType(Writer w) => getInteropDartType(w);
 
   @override
   String getNativeType({String varName = ''}) =>

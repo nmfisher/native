@@ -42,7 +42,7 @@ class Typealias extends BindingType {
         isInternal: isInternal,
       )));
     }
-    
+
     return Typealias._(
       usr: usr,
       originalName: originalName,
@@ -64,9 +64,7 @@ class Typealias extends BindingType {
     super.isInternal,
   })  : _ffiDartAliasName = genFfiDartType ? 'Dart$name' : null,
         _dartAliasName =
-            (!genFfiDartType && type is! Typealias)
-                ? 'Dart$name'
-                : null,
+            (!genFfiDartType && type is! Typealias) ? 'Dart$name' : null,
         super(
           name: genFfiDartType ? 'Native$name' : name,
         );
@@ -123,6 +121,8 @@ class Typealias extends BindingType {
   String getNativeType({String varName = ''}) =>
       type.getNativeType(varName: varName);
 
+  @override
+  String getWasmType(Writer w) => type.getWasmType(w);
 
   @override
   String getDartType(Writer w) {
@@ -132,7 +132,6 @@ class Typealias extends BindingType {
       return type.getDartType(w);
     }
   }
-
 
   @override
   String cacheKey() => type.cacheKey();
@@ -152,33 +151,12 @@ class Typealias extends BindingType {
   // [usr] is unique for specific symbols.
   @override
   int get hashCode => usr.hashCode;
-  
+
   @override
   // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
-  
+
   @override
   // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
-}
-
-/// Objective C's instancetype.
-///
-/// This is an alias for an ObjC object pointer that is special cased in code
-/// generation. It's only valid as the return type of a method, and always
-/// appears as the enclosing class's type, even in inherited methods.
-class ObjCInstanceType extends Typealias {
-  ObjCInstanceType._({
-    super.usr,
-    super.originalName,
-    super.dartDoc,
-    required super.name,
-    required super.type,
-    super.genFfiDartType,
-    super.isInternal,
-  }) : super._();
-
-  
-  @override
-  String getNativeType({String varName = ''}) => 'id $varName';
 }

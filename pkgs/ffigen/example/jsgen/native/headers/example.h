@@ -8,8 +8,14 @@ typedef struct {
     double z;
 } double3;
 
+typedef int INTTYPE;
+
 /** Adds 2 integers. */
 int sum(int a, int b);
+
+INTTYPE sum_with_typedef(INTTYPE a, INTTYPE b);
+
+int **ptr_ptr(int **a, int **b);
 
 /** Subtracts 2 integers. */
 int subtract(int *a, int b);

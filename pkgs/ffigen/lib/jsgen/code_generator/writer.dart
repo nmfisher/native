@@ -242,28 +242,61 @@ class Writer {
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+///
+/// Sub-classes of [NativeType] represent a "native" type (by which we mean a
+/// type that can be passed to a WASM-compiled native function), and its
+/// equivalent Dart representation.
+///
+/// Most sub-classes are non-constructible; they are only intended to preserve
+/// compile-time type information and to translate between native types and
+/// their Dart equivalent.
+///
+/// The exceptions are [Pointer] and sub-classes of [Struct]; these can be
+/// instantiated and returned to the user.
+///
+/// Sub-classes doesn't necessarily represent a singular WASM type; for example,
+/// WASM does not have a char type but we implement a [Char] type to help
+/// preserve "native" type information. Without this, [const char*] would only be
+/// represented as Pointer<Int64>, and we would have no way of knowing that
+/// it can safely be interpreted/converted to a Dart String.
+///
+///
 sealed class NativeType<T> {}
 
-class Char extends NativeType<int> {}
-
-class Int32 extends NativeType<int> {}
-
-class Int64 extends NativeType<int> {}
-
-class Double extends NativeType<double> {}
-
-class Float extends NativeType<double> {}
-
-class Void extends NativeType<void> {}
-
-class NativeFunction<T> extends NativeType<Function> {}
-
-class Struct extends NativeType {}
-
-extension type PointerAddress<T extends NativeType>(int addr) {
-  PointerAddress<T> operator +(int offset) => PointerAddress<T>(addr + offset);
-  PointerAddress<U> cast<U  extends NativeType>() => this as PointerAddress<U>;
+extension type _PtrType<T extends NativeType>(int addr) {
+  _PtrType<T> operator +(int offset) => _PtrType<T>(addr + offset);
+  _PtrType<U> cast<U extends NativeType>() => this as _PtrType<U>;
 }
+
+class Int32 extends NativeType<int> {
+  Int32._();
+}
+
+class Int64 extends NativeType<int> {
+  Int64._();
+}
+
+class Double extends NativeType<double> {
+  Double._();
+}
+
+class Float extends NativeType<double> {
+  Float._();
+}
+
+class Char extends NativeType<int> {
+  Char._();
+}
+
+class Void extends NativeType<void> {
+  Void._();
+}
+
+class NativeFunction<T> extends NativeType<Function> {
+  NativeFunction._();
+}
+
+abstract class Struct extends NativeType {}
 
 extension CharPtr on Pointer<Char> {
   void setValue(String value) {
@@ -276,9 +309,9 @@ extension CharPtr on Pointer<Char> {
   }
 }
 
-class Pointer<T extends NativeType> {
+class Pointer<T extends NativeType> extends NativeType<int> {
   final NativeLibrary module;
-  final PointerAddress<T> addr;
+  final _PtrType<T> addr;
 
   final llvmType = switch (T) {
     Double => "double",
@@ -286,11 +319,28 @@ class Pointer<T extends NativeType> {
     Int32 => "i32",
     Int64 => "i64",
     Char => "i32",
-    _ => throw UnsupportedError("TODO")
+    Pointer => "*",
+    _ => T.toString().startsWith("Pointer")
+        ? "*"
+        : throw UnimplementedError(T.toString())
   };
 
   Pointer(this.addr, this.module);
 
+  Pointer<T> operator +(int offset) =>
+      Pointer<T>(addr + (offset * sizeOf<Pointer>()), module);
+  Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
+}
+
+extension PtrPtr<T extends NativeType> on Pointer<Pointer<T>> {
+  void setValue(Pointer<T> value) {
+    module.setValue(addr, (value.addr as int).toJS, llvmType);
+  }
+
+  Pointer<T> getValue() {
+    var jsValue = module.getValue(this.addr, llvmType);
+    return Pointer<T>(jsValue.toDartInt as _PtrType<T>, module);
+  }
 }
 
 extension Int32Ptr on Pointer<Int32> {
@@ -300,7 +350,7 @@ extension Int32Ptr on Pointer<Int32> {
 
   int getValue() {
     var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartInt ;
+    return jsValue.toDartInt;
   }
 }
 
@@ -308,9 +358,10 @@ extension Int64Ptr on Pointer<Int64> {
   void setValue(int value) {
     module.setValue(addr, value.toJS, llvmType);
   }
+
   int getValue() {
     var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartInt ;
+    return jsValue.toDartInt;
   }
 }
 
@@ -318,6 +369,7 @@ extension FloatPtr on Pointer<Float> {
   void setValue(double value) {
     module.setValue(addr, value.toJS, llvmType);
   }
+
   double getValue() {
     var jsValue = module.getValue(this.addr, llvmType);
     return jsValue.toDartDouble;
@@ -328,6 +380,7 @@ extension DoublePtr on Pointer<Double> {
   void setValue(double value) {
     module.setValue(addr, value.toJS, llvmType);
   }
+
   double getValue() {
     var jsValue = module.getValue(this.addr, llvmType);
     return jsValue.toDartDouble;
@@ -344,35 +397,34 @@ extension StringUtils on String {
 }
 
 extension type NativeLibrary(JSObject _) implements JSObject {
+  
   @JS('stackAlloc')
-  external self.PointerAddress<T> _stackAlloc<T extends NativeType>(int numBytes);
+  external _PtrType<T> _stackAlloc<T extends NativeType>(int numBytes);
   self.Pointer<T> stackAlloc<T extends NativeType>(int count) {
-    if (!_sizes.containsKey(T)) {
-      throw UnsupportedError(T.toString());
-    }
-    var addr = _stackAlloc<T>(_sizes[T]! * count);
+    final numBytes = sizeOf<T>() * count;
+    var addr = _stackAlloc<T>(numBytes);
     return Pointer<T>(addr, this);
   }
 
-  external JSNumber getValue(self.PointerAddress addr, String llvmType);
+  external JSNumber getValue(_PtrType addr, String llvmType);
   external void setValue(
-      self.PointerAddress addr, JSNumber value, String llvmType);
+      _PtrType addr, JSNumber value, String llvmType);
 
   @JS("lengthBytesUTF8")
   external int _lengthBytesUTF8(String str);
 
   @JS("UTF8ToString")
-  external String _UTF8ToString(self.PointerAddress<Char> ptr);
+  external String _UTF8ToString(_PtrType<Char> ptr);
 
   @JS("stringToUTF8")
   external void _stringToUTF8(
-      String str, self.PointerAddress<Char> ptr, int maxBytesToWrite);
+      String str, _PtrType<Char> ptr, int maxBytesToWrite);
 
   external void writeArrayToMemory(JSUint8Array data, JSNumber ptr);
 
-  external self.PointerAddress<NativeFunction> addFunction(
+  external _PtrType<NativeFunction> addFunction(
       JSFunction f, String signature);
-  external void removeFunction(self.PointerAddress<NativeFunction> f);
+  external void removeFunction(_PtrType<NativeFunction> f);
   external JSAny get ALLOC_STACK;
   external JSAny get HEAPU32;
   external JSAny get HEAP32;
@@ -385,15 +437,20 @@ extension type NativeLibrary(JSObject _) implements JSObject {
       s.write('}\n\n');
 
       s.write('''
-final _sizes = <Type, int>{
-  Int32: 4,
-  Float: 4,
-  Pointer:4,
-  Int64:4,
-  Double:4,
-  ${_structs.map((s) => "${s.name} : ${s.sizeInBytes}").join(",\n")}
+int sizeOf<T>() {
+  final size = switch (T) {
+    Int32 => 4,
+    Float => 4,
+    Pointer => sizeOf<Int32>(),
+    Int64 => 8,
+    Double => 8,
+    ${_structs.map((s) => "${s.name} => ${s.sizeInBytes},").join("\n")}
+    _ => T.toString().startsWith("Pointer")
+        ? sizeOf<Pointer>()
+        : throw UnimplementedError(T.toString())
   };
-''');
+  return size;
+}\n''');
     }
 
     /// Write [noLookUpBindings].

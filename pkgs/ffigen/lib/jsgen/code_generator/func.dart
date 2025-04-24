@@ -246,7 +246,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
           final ptrType = field.type as PointerType;
           final inner = ptrType.child.getWasmType(w);
           wrapper = 'Pointer(';
-          jsToDart = '.toDartInt as PointerAddress<$inner>, this)';
+          jsToDart = '.toDartInt as _PtrType<$inner>, this)';
         }
 
         var fieldName = '${structName}_${field.name}';
@@ -262,8 +262,10 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
     } else if (functionType.returnType is PointerType) {
       var ptrType = functionType.returnType as PointerType;
       var wrappedType = ptrType.baseType;
-      if (wrappedType is! NativeType) {
-        throw UnimplementedError();
+
+
+      if (wrappedType is! NativeType && wrappedType is! Struct && wrappedType is! Typealias) {
+        throw UnimplementedError(wrappedType.runtimeType.toString());
       }
 
       userReturnType = ptrType.getDartType(w);
@@ -291,7 +293,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         return '${p.name}.addr,';
       }
 
-      if(p.type is EnumClass) {
+      if (p.type is EnumClass) {
         return '${p.name}.value,';
       }
 
