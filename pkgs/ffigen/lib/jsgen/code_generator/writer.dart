@@ -298,6 +298,8 @@ class NativeFunction<T> extends NativeType<Function> {
 
 abstract class Struct extends NativeType {}
 
+class Opaque extends Struct {}
+
 extension CharPtr on Pointer<Char> {
   void setValue(String value) {
     var len = module._lengthBytesUTF8(value);

@@ -136,9 +136,6 @@ class Typealias extends BindingType {
   @override
   String cacheKey() => type.cacheKey();
 
-  @override
-  String? getDefaultValue(Writer w) => type.getDefaultValue(w);
-
   // Used to compare whether two Typealias are same symbols and ensure that they
   // are unique when adding to a [Set].
   @override
@@ -153,10 +150,8 @@ class Typealias extends BindingType {
   int get hashCode => usr.hashCode;
 
   @override
-  // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
 
   @override
-  // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();
 }

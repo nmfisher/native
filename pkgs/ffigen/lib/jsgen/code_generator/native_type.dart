@@ -89,9 +89,6 @@ class NativeType extends Type {
   String getNativeType({String varName = ''}) => '$_nativeType $varName';
 
   @override
-  String toString() => _dartType;
-
-  @override
   String cacheKey() => _dartType;
 }
 

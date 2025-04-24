@@ -134,7 +134,7 @@ class Func extends LookUpBinding {
     // - a Finalizer will be used to call removeFunction when the Dart Function
     //   is garbage-collected. (?)
     //
-    final interopFunctionName = "_$name";
+    final interopFunctionName = '_$name';
     final userFunctionName = name;
 
     var userReturnType = functionType.returnType.getDartType(w);
@@ -181,7 +181,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         final argPtrName = '${param.name}_structPtr';
 
         var paramConstructor =
-            "final $argPtrName = _stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n";
+            'final $argPtrName = _stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n';
 
         int offset = 0;
         for (final paramMember in paramType.members) {
@@ -236,7 +236,7 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         }
 
         late String jsToDart;
-        String wrapper = "";
+        String wrapper = '';
         final dartType = field.type.getDartType(w);
         if (dartType == 'double') {
           jsToDart = '.toDartDouble';
@@ -259,16 +259,25 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
       interopReturnTypeConstructors.add(
           "return ${originalReturnType.getDartType(w)}(${outFieldNames.join(',')});");
       // if the return type is a PointerAddress, we need to wrap inside a Pointer
-    } else if (functionType.returnType is PointerType) {
-      var ptrType = functionType.returnType as PointerType;
+    } else if (functionType.returnType is PointerType ||
+        functionType.returnType.typealiasType is PointerType) {
+      var ptrType = functionType.returnType.typealiasType is PointerType
+          ? functionType.returnType.typealiasType as PointerType
+          : functionType.returnType as PointerType;
       var wrappedType = ptrType.baseType;
 
-
-      if (wrappedType is! NativeType && wrappedType is! Struct && wrappedType is! Typealias) {
+      if (wrappedType is! NativeType &&
+          wrappedType is! Struct &&
+          wrappedType is! Typealias &&
+          wrappedType is! NativeFunc) {
         throw UnimplementedError(wrappedType.runtimeType.toString());
       }
 
-      userReturnType = ptrType.getDartType(w);
+      if (functionType.returnType is Typealias) {
+        userReturnType = functionType.returnType.getDartType(w);
+      } else {
+        userReturnType = ptrType.getDartType(w);
+      }
       interopReturnTypeConstructors
           .add('return $userReturnType(result, this);');
     } else if (functionType.returnType is EnumClass) {
@@ -286,22 +295,30 @@ final $interopFnPtrName = addFunction(${param.name}.toJS, "$wasmSignature");\n''
         .join('');
     final invokeInteropArgsString = interopArguments.map((p) {
       if (p.type.baseType is NativeFunc) {
-        return '${p.name}.cast(),';
+        return '${p.name}.cast()';
       }
 
-      if (p.type is PointerType && p.type.baseType is! Struct) {
-        return '${p.name}.addr,';
+      if (p.type is PointerType) {
+        return '${p.name}.addr as ${p.type.getWasmType(w)}';
       }
 
       if (p.type is EnumClass) {
-        return '${p.name}.value,';
+        return '${p.name}.value';
       }
 
-      return "${p.name},";
-    }).join('');
+      if (p.type is Typealias && p.type.typealiasType is PointerType) {
+        var pointerType = p.type.typealiasType as PointerType;
+
+        // print((p.type.typealiasType as PointerType).getDartType(w));
+        // print((p.type.typealiasType as PointerType).getInteropDartType(w));
+        return '${p.name}.addr as ${pointerType.getWasmType(w)}';
+      }
+
+      return '${p.name}';
+    }).join(',');
 
     s.write(
-        '''external $interopReturnType $interopFunctionName($interopArgsString);''');
+        '''external $interopReturnType $interopFunctionName($interopArgsString);\n''');
     s.write('''$userReturnType $userFunctionName($userArgsString) {
             ${interopArgumentConstructors.join("\n")}
             final result = $interopFunctionName($invokeInteropArgsString);
@@ -345,6 +362,6 @@ class Parameter {
       '${type.getNativeType(varName: varName)}'
       '${objCConsumed ? ' __attribute__((ns_consumed))' : ''}';
 
-  @override
-  String toString() => '$type $name';
+  // @override
+  // String toString() => '$type $name';
 }
