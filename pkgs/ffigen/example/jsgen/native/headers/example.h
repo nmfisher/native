@@ -2,11 +2,23 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+typedef void (*FunctionTypedef)(void *const owner);
+
 typedef struct { 
     double x;
     double y; 
     double z;
 } double3;
+
+struct MyStruct { 
+    float a;
+    const char* b;
+};
+typedef struct MyStruct MyStruct;
+struct StructWithArray {
+    double foo[4];
+};
+typedef struct StructWithArray StructWithArray;
 
 typedef int INTTYPE;
 
@@ -14,6 +26,20 @@ typedef int INTTYPE;
 int sum(int a, int b);
 
 INTTYPE sum_with_typedef(INTTYPE a, INTTYPE b);
+
+void accept_fn_typedef_arg(FunctionTypedef arg);
+FunctionTypedef return_fn_typedef();
+
+double* return_array();
+
+void accept_struct_with_array(StructWithArray arg);
+StructWithArray return_struct_with_array_by_value();
+void *return_void_ptr();
+void accept_void_ptr(void *arg);
+
+MyStruct *return_struct_ptr();
+
+void accept_struct_ptr(MyStruct *arg);
 
 int **ptr_ptr(int **a, int **b);
 
@@ -30,12 +56,6 @@ float *divide(int a, int b);
 double *dividePrecision(float *a, float *b);
 
 const char* copy_string(const char *instr);
-
-struct MyStruct { 
-    float a;
-    const char* b;
-};
-typedef struct MyStruct MyStruct;
 
 MyStruct returnStructByValue(float a, const char *b);
 

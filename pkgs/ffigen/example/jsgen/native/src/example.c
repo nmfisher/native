@@ -14,6 +14,16 @@ int EMSCRIPTEN_KEEPALIVE sum(int a, int b) {
     return a + b;
 }
 
+double EMSCRIPTEN_KEEPALIVE *  return_array() {
+    double *arr = (double*)malloc(sizeof(double) * 4);
+    arr[0] = 1.0;
+    arr[1] = 2.0;
+    arr[2] = 3.0;
+    arr[3] = 4.0;
+    return arr;
+}
+
+
 int ** EMSCRIPTEN_KEEPALIVE ptr_ptr(int **a, int **b) {
     int **out = (int **)malloc(sizeof(int*) * 2);
     out[0] = (int *)malloc(sizeof(int*));
