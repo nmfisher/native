@@ -62,7 +62,8 @@ MyStruct returnStructByValue(float a, const char *b);
 int structArgument(double3 vector);
 
 void voidFunctionArgument(void(*callback)());
-void functionArgument(void(*callback)(int arg));
+void primitiveFunctionArgument(void(*callback)(int arg));
+void nonPrimitiveFunctionArgument(void(*callback)(MyStruct *arg));
 
 enum MyEnum { 
     ENUM_VAL1,
