@@ -85,10 +85,14 @@ void EMSCRIPTEN_KEEPALIVE voidFunctionArgument(void(*callback)()) {
     callback();
 }
 
-void EMSCRIPTEN_KEEPALIVE functionArgument(void(*callback)(int arg)) {
+void EMSCRIPTEN_KEEPALIVE primitiveFunctionArgument(void(*callback)(int arg)) {
     if (callback != NULL) {
         callback(42);
     }
+}
+
+void EMSCRIPTEN_KEEPALIVE nonPrimitiveFunctionArgument(void(*callback)(MyStruct *arg)) {
+    callback(NULL);
 }
 
 MyEnum EMSCRIPTEN_KEEPALIVE returnEnum() {
