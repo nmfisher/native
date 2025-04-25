@@ -148,8 +148,11 @@ extension ${name}Ext on Pointer<$name> {
         final llvmType = field.type is NativeType
             ? (field.type as NativeType).llvmType
             : "*";
+        final toDart = field.type.baseType.getDartType(w) == "double"
+            ? 'toDartDouble'
+            : 'toDartInt';
         s.write(
-            'var ${field.name} = _lib.getValue((addr as Pointer) + $offset, "$llvmType").toDartDouble;\n');
+            'var ${field.name} = _lib.getValue((addr as Pointer) + $offset, "$llvmType").$toDart;\n');
       }
       offset += field.type.sizeInBytes;
     }
@@ -176,7 +179,8 @@ extension ${name}Ext on Pointer<$name> {
     s.write('}\n}');
 
     s.write('final class $enclosingClassName extends ');
-    s.write('${w.selfImportPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
+    s.write(
+        '${w.selfImportPrefix}.${isOpaque ? 'DartStruct' : dartClassName}{\n');
     const depth = '  ';
 
     // Constructor parameters
