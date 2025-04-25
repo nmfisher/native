@@ -20,7 +20,6 @@ class Library {
   /// List of bindings in this library.
   late List<Binding> bindings;
 
-
   late Writer _writer;
   Writer get writer => _writer;
 
@@ -30,7 +29,6 @@ class Library {
     required List<Binding> bindings,
     String? header,
     bool sort = false,
-    bool generateForPackageObjectiveC = false,
     PackingValue? Function(Declaration)? packingOverride,
     List<LibraryImport>? libraryImports,
     bool silenceEnumWarning = false,
@@ -38,8 +36,12 @@ class Library {
   }) {
     _findBindings(bindings, sort);
 
-    final codeGenBindings =
-        this.bindings.where((b) => b.generateBindings).toList();
+    final codeGenBindings = this.bindings.where((b) => b is Func).toList();
+    final typeBindings = this.bindings.where((b) => b is! Func).toList();
+    for (final binding in typeBindings) {
+      print(binding.name);
+      
+    }
 
     /// Handle any declaration-declaration name conflicts and emit warnings.
     final declConflictHandler = UniqueNamer({});
@@ -54,8 +56,8 @@ class Library {
       for (final b in this.bindings) {
         if (b is Struct) {
           final pack = packingOverride(Declaration(
-            usr: b.usr,
-            originalName: b.originalName,
+            usr: b.usr!,
+            originalName: b.originalName!,
           ));
           if (pack != null) {
             b.pack = pack.value;
@@ -64,36 +66,13 @@ class Library {
       }
     }
 
-    // Seperate bindings which require lookup.
-    final lookupBindings = <LookUpBinding>[];
-    final nativeBindings = <LookUpBinding>[];
-    FfiNativeConfig? nativeConfig;
-
-    for (final binding in codeGenBindings.whereType<LookUpBinding>()) {
-      final nativeConfigForBinding = switch (binding) {
-        Global() => binding.nativeConfig,
-        _ => null,
-      };
-
-      // At the moment, all bindings share their native config.
-      nativeConfig ??= nativeConfigForBinding;
-
-      final usesLookup =
-          nativeConfigForBinding == null || !nativeConfigForBinding.enabled;
-      (usesLookup ? lookupBindings : nativeBindings).add(binding);
-    }
-    final noLookUpBindings =
-        codeGenBindings.whereType<NoLookUpBinding>().toList();
-
     _writer = Writer(
-      lookUpBindings: lookupBindings,
-
-      noLookUpBindings: noLookUpBindings,
+      bindings: codeGenBindings,
+      typeBindings: typeBindings,
       className: name,
       classDocComment: description,
       header: header,
       additionalImports: libraryImports,
-
       silenceEnumWarning: silenceEnumWarning,
       nativeEntryPoints: nativeEntryPoints,
     );
@@ -107,9 +86,9 @@ class Library {
     }
 
     /// Save bindings.
-    bindings = dependencies.toList();
+    this.bindings = dependencies.toList();
     if (sort) {
-      bindings.sortBy((b) => b.name);
+      this.bindings.sortBy((b) => b.name);
       for (final b in bindings) {
         b.sort();
       }
@@ -148,25 +127,6 @@ class Library {
     if (format) {
       _dartFormat(file.path);
     }
-  }
-
-  /// Generates [file] with the Objective C code needed for the bindings, if
-  /// any.
-  ///
-  /// Returns whether bindings were generated.
-  bool generateObjCFile(File file) {
-    final bindings = writer.generateObjC(file.path);
-
-    if (bindings == null) {
-      // No ObjC code needed. If there's already a file (eg from an earlier
-      // run), delete it so it's not accidentally included in the build.
-      if (file.existsSync()) file.deleteSync();
-      return false;
-    }
-
-    if (!file.existsSync()) file.createSync(recursive: true);
-    file.writeAsStringSync(bindings);
-    return true;
   }
 
   /// Generates [file] with symbol output yaml.

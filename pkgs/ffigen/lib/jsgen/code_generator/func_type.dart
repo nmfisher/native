@@ -92,7 +92,6 @@ class FunctionType extends Type {
         type: parameters[i].type,
         originalName: names[i],
         name: finalName,
-        objCConsumed: false,
       );
     }
   }

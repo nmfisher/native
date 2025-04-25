@@ -7,8 +7,8 @@ import 'writer.dart';
 
 /// Base class for all Bindings.
 ///
-/// Do not extend directly, use [LookUpBinding] or [NoLookUpBinding].
 abstract class Binding {
+  
   /// Holds the Unified Symbol Resolution string obtained from libclang.
   final String usr;
 
@@ -36,10 +36,7 @@ abstract class Binding {
   ///
   /// Note: This does not print the typedef dependencies.
   /// Must call getTypedefDependencies first.
-  BindingString toBindingString(Writer w);
-
-  /// Returns the Objective C bindings, if any.
-  BindingString? toObjCBindingString(Writer w) => null;
+  BindingString toBindingString(Writer w, { bool writeModuleBinding = false});
 
   /// Sort members of this binding, if possible. For example, sort the methods
   /// of a ObjCInterface.
@@ -49,30 +46,3 @@ abstract class Binding {
   bool get generateBindings => true;
 }
 
-/// Base class for bindings which look up symbols in dynamic library.
-abstract class LookUpBinding extends Binding {
-  LookUpBinding({
-    String? usr,
-    String? originalName,
-    required super.name,
-    super.dartDoc,
-    super.isInternal,
-  }) : super(
-          usr: usr ?? name,
-          originalName: originalName ?? name,
-        );
-}
-
-/// Base class for bindings which don't look up symbols in dynamic library.
-abstract class NoLookUpBinding extends Binding {
-  NoLookUpBinding({
-    String? usr,
-    String? originalName,
-    required super.name,
-    super.dartDoc,
-    super.isInternal,
-  }) : super(
-          usr: usr ?? name,
-          originalName: originalName ?? name,
-        );
-}

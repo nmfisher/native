@@ -68,11 +68,6 @@ void addToBindings(Set<Binding> bindings, Binding? b) {
   }
 }
 
-BindingType? _getCodeGenTypeFromCursor(clang_types.CXCursor cursor) {
-  final t = getCodeGenType(cursor.type(), ignoreFilter: false);
-  return t is BindingType ? t : null;
-}
-
 /// Visits all cursors and builds a map of usr and [clang_types.CXCursor].
 void buildUsrCursorDefinitionMap(clang_types.CXCursor translationUnitCursor) {
   translationUnitCursor.visitChildren((cursor) {

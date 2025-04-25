@@ -1,7 +1,6 @@
 // Copyright (c) 2021, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-
 import '../code_generator.dart';
 
 import 'binding_string.dart';
@@ -39,8 +38,8 @@ abstract class Compound extends BindingType {
   /// `struct` or `union`, depending on whether the declaration is a typedef.
   final String nativeType;
 
-  @override
-  String getWasmType(Writer w) => originalName;
+  // @override
+  // String getWasmType(Writer w) => originalName;
 
   Compound({
     super.usr,
@@ -102,12 +101,12 @@ abstract class Compound extends BindingType {
   }
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, {bool writeModuleBinding = false}) {
     final bindingType =
         isStruct ? BindingStringType.struct : BindingStringType.union;
 
     final s = StringBuffer();
-    final enclosingClassName = name;
+    final enclosingClassName = 'Dart$name';
     if (dartDoc != null) {
       s.write(makeDartDoc(dartDoc!));
     }
@@ -126,8 +125,56 @@ abstract class Compound extends BindingType {
     if (isStruct && pack != null) {
       s.write('@${w.selfImportPrefix}.Packed($pack)\n');
     }
-    final dartClassName = isStruct ? 'Struct' : 'Union';
+    final dartClassName = isStruct ? 'DartStruct' : 'Union';
     // Write class declaration.
+    s.write('''
+extension type $name(Struct addr) implements Struct {
+  static Pointer<$name> stackAlloc() {
+    return _lib._stackAlloc<$name>($sizeInBytes);
+  }
+}
+extension ${name}Ext on Pointer<$name> {
+  ${enclosingClassName} toDart() {''');
+    int offset = 0;
+
+    for (final field in members) {
+      if (field.type is ConstantArray) {
+        var arrType = field.type as ConstantArray;
+        s.write(
+            'var ${field.name} = Array<${field.type.baseArrayType.getWasmType(w)}>._((addr: (addr as Pointer).cast(), numElements: ${arrType.length}));\n');
+      } else if (field.type is PointerType) {
+        s.write('var ${field.name} = (addr as Pointer) + $offset;\n');
+      } else {
+        final llvmType = field.type is NativeType
+            ? (field.type as NativeType).llvmType
+            : "*";
+        s.write(
+            'var ${field.name} = _lib.getValue((addr as Pointer) + $offset, "$llvmType").toDartDouble;\n');
+      }
+      offset += field.type.sizeInBytes;
+    }
+    s.write(
+        '''return ${enclosingClassName}(${members.map((m) => "${m.name}${m.type is PointerType ? ".cast()" : ""}").join(",")});
+    }''');
+
+    s.write('''void setFrom(${enclosingClassName} dartType) {''');
+    offset = 0;
+    for (final field in members) {
+      final fieldType = field.type;
+      final llvmType = fieldType.llvmType;
+      String fieldAccessor = 'dartType.${field.name}';
+      if (fieldType is ConstantArray) {
+        fieldAccessor += '._.addr.addr';
+      } else if (field.type is PointerType) {
+        fieldAccessor += '.addr';
+      }
+      fieldAccessor += '.toJS';
+      s.write(
+          '_lib.setValue((addr as Pointer) + $offset, $fieldAccessor, "$llvmType");\n');
+      offset += field.type.sizeInBytes;
+    }
+    s.write('}\n}');
+
     s.write('final class $enclosingClassName extends ');
     s.write('${w.selfImportPrefix}.${isOpaque ? 'Opaque' : dartClassName}{\n');
     const depth = '  ';
@@ -143,7 +190,6 @@ abstract class Compound extends BindingType {
         s.write('\n');
       }
       if (m.type case final ConstantArray arrayType) {
-        
         s.write('${depth}${_getInlineArrayTypeString(m.type, w)} ');
         s.write('${m.name};\n\n');
 
@@ -152,8 +198,7 @@ abstract class Compound extends BindingType {
         final memberName = m.name;
 
         if (m.type case final PointerType ptrType) {
-           s.write(
-              '${depth}final ${m.type.getDartType(w)} $memberName;\n\n');
+          s.write('${depth}final ${m.type.getDartType(w)} $memberName;\n\n');
         } else {
           s.write(
               '${depth}final ${m.type.getInteropDartType(w)} $memberName;\n\n');

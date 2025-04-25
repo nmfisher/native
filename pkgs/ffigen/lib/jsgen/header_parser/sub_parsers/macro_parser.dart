@@ -109,7 +109,7 @@ void _macroVariablevisitor(
         case clang_types.CXEvalResultKind.CXEval_Int:
           constant = Constant(
             usr: savedMacros[macroName]!.usr,
-            originalName: savedMacros[macroName]!.originalName,
+            originalName: savedMacros[macroName]!.originalName ?? macroName,
             name: macroName,
             rawType: 'int',
             rawValue: clang.clang_EvalResult_getAsLongLong(e).toString(),
@@ -118,7 +118,7 @@ void _macroVariablevisitor(
         case clang_types.CXEvalResultKind.CXEval_Float:
           constant = Constant(
             usr: savedMacros[macroName]!.usr,
-            originalName: savedMacros[macroName]!.originalName,
+            originalName: savedMacros[macroName]!.originalName ?? macroName,
             name: macroName,
             rawType: 'double',
             rawValue:
@@ -132,7 +132,7 @@ void _macroVariablevisitor(
           );
           constant = Constant(
             usr: savedMacros[macroName]!.usr,
-            originalName: savedMacros[macroName]!.originalName,
+            originalName: savedMacros[macroName]!.originalName ?? macroName,
             name: macroName,
             rawType: 'String',
             rawValue: "'$rawValue'",

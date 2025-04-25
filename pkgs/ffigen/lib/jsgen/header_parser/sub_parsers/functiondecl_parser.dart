@@ -52,16 +52,13 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
       }
 
       final paramName = paramCursor.spelling();
-      final objCConsumed = paramCursor
-          .hasChildWithKind(clang_types.CXCursorKind.CXCursor_NSConsumed);
 
       /// If [paramName] is null or empty, its set to `arg$i` by code_generator.
       parameters.add(
         Parameter(
           originalName: paramName,
           name: config.functionDecl.renameMember(decl, paramName),
-          type: paramType,
-          objCConsumed: objCConsumed,
+          type: paramType
         ),
       );
     }
@@ -99,10 +96,6 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
       return funcs;
     }
 
-    // Look for any annotations on the function.
-    final objCReturnsRetained = cursor
-        .hasChildWithKind(clang_types.CXCursorKind.CXCursor_NSReturnsRetained);
-
     // Initialized with a single value with no prefix and empty var args.
     var varArgFunctions = [VarArgFunction('', [])];
     if (config.varArgFunctions.containsKey(funcName)) {
@@ -125,13 +118,9 @@ List<Func> parseFunctionDeclaration(clang_types.CXCursor cursor) {
         returnType: returnType,
         parameters: parameters,
         varArgParameters: vaFunc.types
-            .map((ta) => Parameter(type: ta, name: 'va', objCConsumed: false))
+            .map((ta) => Parameter(type: ta, name: 'va'))
             .toList(),
-        exposeSymbolAddress:
-            config.functionDecl.shouldIncludeSymbolAddress(decl),
         exposeFunctionTypedefs: config.shouldExposeFunctionTypedef(decl),
-        isLeaf: config.isLeafFunction(decl),
-        objCReturnsRetained: objCReturnsRetained,
       ));
     }
     bindingsIndex.addFuncToSeen(funcUsr, funcs.last);

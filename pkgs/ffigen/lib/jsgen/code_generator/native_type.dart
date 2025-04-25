@@ -73,11 +73,11 @@ class NativeType extends Type {
       case 'j':
         return 'Int64';
       case 'f':
-        return 'Float';
+        return 'Float32';
       case 'd':
-        return 'Double';
+        return 'Float64';
       case 'p':
-        return '_PtrType';
+        return 'Pointer';
       case 'v':
         return 'Void';
       default:

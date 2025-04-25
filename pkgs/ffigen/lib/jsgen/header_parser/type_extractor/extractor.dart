@@ -316,7 +316,7 @@ Type _extractFromFunctionProto(clang_types.CXType cxtype,
     }
 
     parameters.add(
-      Parameter(name: '', type: pt, objCConsumed: false),
+      Parameter(name: '', type: pt),
     );
   }
 

@@ -21,14 +21,14 @@ import 'writer.dart';
 /// ```dart
 /// final int a = _dylib.lookup<ffi.Int32>('a').value;
 /// ```
-class Global extends LookUpBinding {
+class Global extends Binding {
   final Type type;
   final FfiNativeConfig nativeConfig;
   final bool constant;
 
   Global({
-    super.usr,
-    super.originalName,
+    required super.usr,
+    required super.originalName,
     required super.name,
     required this.type,
     super.dartDoc,
@@ -37,7 +37,7 @@ class Global extends LookUpBinding {
   });
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, { bool writeModuleBinding = false}) {
     final s = StringBuffer();
     final globalVarName = name;
     if (dartDoc != null) {
@@ -60,7 +60,7 @@ class Global extends LookUpBinding {
           w,
           nativeType: cType,
           dartName: pointerName,
-          nativeSymbolName: originalName,
+          nativeSymbolName: pointerName,
           isLeaf: false,
         ))
         ..write('external ');
@@ -71,22 +71,6 @@ class Global extends LookUpBinding {
       s.writeln('$ffiDartType $pointerName;\n');
     } else {
       throw UnimplementedError();
-      // final pointerName =
-      //     w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
-
-      // s.write('late final ${w.ffiLibraryPrefix}.Pointer<$cType> $pointerName = '
-      //     "${w.lookupFuncIdentifier}<$cType>('$originalName');\n\n");
-      // final baseTypealiasType = type.typealiasType;
-      // if (baseTypealiasType is Compound) {
-      //   if (baseTypealiasType.isOpaque) {
-      //     s.write('${w.ffiLibraryPrefix}.Pointer<$cType> get $globalVarName =>'
-      //         ' $pointerName;\n\n');
-      //   } else {
-      //     s.write('$ffiDartType get $globalVarName => $pointerName.ref;\n\n');
-      //   }
-      // } else {
-      //   throw UnimplementedError();
-      // }
     }
 
     return BindingString(type: BindingStringType.global, string: s.toString());

@@ -229,7 +229,7 @@ class EnumClass extends BindingType {
   bool get _isBuiltIn => false;
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, { bool writeModuleBinding = false}) {
     final s = StringBuffer();
     if (_isBuiltIn) {
       return const BindingString(type: BindingStringType.enum_, string: '');

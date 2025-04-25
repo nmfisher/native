@@ -67,7 +67,9 @@ class Typealias extends BindingType {
             (!genFfiDartType && type is! Typealias) ? 'Dart$name' : null,
         super(
           name: genFfiDartType ? 'Native$name' : name,
-        );
+        ) {
+
+  }
 
   @override
   void addDependencies(Set<Binding> dependencies) {
@@ -85,7 +87,7 @@ class Typealias extends BindingType {
   }
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, {bool writeModuleBinding = false}) {
     if (_ffiDartAliasName != null) {
       _ffiDartAliasName = w.topLevelUniqueNamer.makeUnique(_ffiDartAliasName!);
     }

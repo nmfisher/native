@@ -30,7 +30,6 @@ Library parse(Config c) {
     description: c.wrapperDocComment,
     header: c.preamble,
     sort: c.sort,
-    generateForPackageObjectiveC: c.generateForPackageObjectiveC,
     packingOverride: c.structPackingOverride,
     libraryImports: c.libraryImports.values.toList(),
     silenceEnumWarning: c.silenceEnumWarning,

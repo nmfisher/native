@@ -18,7 +18,7 @@ import 'writer.dart';
 /// ```dart
 /// const int name = 10;
 /// ```
-class Constant extends NoLookUpBinding {
+class Constant extends Binding {
   /// The rawType is pasted as it is. E.g 'int', 'String', 'double'
   final String rawType;
 
@@ -27,17 +27,11 @@ class Constant extends NoLookUpBinding {
   /// Put quotes if type is a string.
   final String rawValue;
 
-  Constant({
-    super.usr,
-    super.originalName,
-    required super.name,
-    super.dartDoc,
-    required this.rawType,
-    required this.rawValue,
-  });
+  Constant({required super.usr, required super.originalName, required super.name, required this.rawType, required this.rawValue});
+
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, { bool writeModuleBinding = false }) {
     final s = StringBuffer();
     final constantName = name;
 

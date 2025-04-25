@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'compound.dart';
-import 'writer.dart';
 
 /// A binding for C Struct.
 ///
@@ -41,12 +40,6 @@ class Struct extends Compound {
 
   @override
   String get llvmType => '*';
-
-  @override
-  String getInteropDartType(Writer w) {
-    w.markStruct(this);
-    return super.getInteropDartType(w);
-  }
 
   @override
   int get sizeInBytes {

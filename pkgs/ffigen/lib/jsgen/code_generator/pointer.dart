@@ -9,8 +9,13 @@ import 'writer.dart';
 /// Represents a pointer.
 class PointerType extends Type {
   final Type child;
+
+  @override
   final int sizeInBytes = 8;
+
+  @override
   final String llvmType = '*';
+
   final String wasmType = 'p';
 
   PointerType._(this.child);
@@ -29,17 +34,17 @@ class PointerType extends Type {
 
   @override
   String getInteropDartType(Writer w) {
-    if (child is PointerType) {
-      return '_PtrType<${child.getDartType(w)}>';
+    if (child is PointerType || child is Struct) {
+      return 'Pointer<${child.getDartType(w)}>';
     }
-    return '_PtrType<${child.getWasmType(w)}>';
+    return 'Pointer<${child.getWasmType(w)}>';
   }
 
   @override
   String getDartType(Writer w) {
     if (child == NativeType(SupportedNativeType.char)) {
       return '${w.selfImportPrefix}.Pointer<Char>';
-    } else if (child is PointerType) {
+    } else if (child is PointerType || child is Struct) {
       return '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
     } else {
       return '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
@@ -75,6 +80,12 @@ class ConstantArray extends PointerType {
   bool get isIncompleteCompound => baseArrayType.isIncompleteCompound;
 
   @override
+  String getInteropDartType(Writer w) {
+    w.markArray(this);
+    return super.getInteropDartType(w);
+  }
+
+  @override
   String getNativeType({String varName = ''}) =>
       '${child.getNativeType()} $varName[$length]';
 
@@ -86,7 +97,7 @@ class ConstantArray extends PointerType {
 
   @override
   String getDartType(Writer w) {
-      return 'Array<${child.getWasmType(w)}>';
+    return 'Array<${child.getWasmType(w)}>';
   }
 
   @override

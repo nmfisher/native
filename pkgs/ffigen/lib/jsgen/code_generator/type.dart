@@ -61,23 +61,12 @@ abstract class Type {
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
 
-  /// Returns a human readable string representation of the Type. This is mostly
-  /// just for debugging, but it may also be used for non-functional code (eg to
-  /// name a variable or type in generated code).
-  @override
-  String toString();
-
   /// Cache key used in various places to dedupe Types. By default this is just
   /// the hash of the Type, but in many cases this does not dedupe sufficiently.
   /// So Types that may be duplicated should override this to return a more
   /// specific key. Types that are already deduped don't need to override this.
   /// toString() is not a valid cache key as there may be name collisions.
   String cacheKey() => hashCode.toRadixString(36);
-
-  /// Returns a string of code that creates a default value for this type. For
-  /// example, for int types this returns the string '0'. A null return means
-  /// that default values aren't supported for this type, eg void.
-  String? getDefaultValue(Writer w) => null;
 }
 
 /// Base class for all Type bindings.
@@ -85,14 +74,17 @@ abstract class Type {
 /// Since Dart doesn't have multiple inheritance, this type exists so that we
 /// don't have to reimplement the default methods in all the classes that want
 /// to extend both NoLookUpBinding and Type.
-abstract class BindingType extends NoLookUpBinding implements Type {
+abstract class BindingType extends Binding implements Type {
   BindingType({
-    super.usr,
-    super.originalName,
+    String? usr,
+    String? originalName,
     required super.name,
     super.dartDoc,
     super.isInternal,
-  });
+  }) : super(
+          usr: usr ?? name,
+          originalName: originalName ?? name,
+        );
 
   @override
   Type get baseType => this;
@@ -108,8 +100,7 @@ abstract class BindingType extends NoLookUpBinding implements Type {
 
   @override
   String getWasmType(Writer w) =>
-      throw UnsupportedError('No mapping for type: $this');
-
+      throw UnsupportedError('No WASM type for $this');
 
   @override
   String getInteropDartType(Writer w) =>
@@ -122,15 +113,8 @@ abstract class BindingType extends NoLookUpBinding implements Type {
   String getNativeType({String varName = ''}) =>
       throw UnsupportedError('No native mapping for type: $this');
 
-
-  @override
-  String toString() => originalName;
-
   @override
   String cacheKey() => hashCode.toRadixString(36);
-
-  @override
-  String? getDefaultValue(Writer w) => null;
 }
 
 /// Represents an unimplemented type. Used as a marker, so that declarations
@@ -141,11 +125,11 @@ class UnimplementedType extends Type {
 
   @override
   String toString() => '(Unimplemented: $reason)';
-  
+
   @override
   // TODO: implement llvmType
   String get llvmType => throw UnimplementedError();
-  
+
   @override
   // TODO: implement sizeInBytes
   int get sizeInBytes => throw UnimplementedError();

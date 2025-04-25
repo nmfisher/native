@@ -1,11 +1,7 @@
 // Copyright (c) 2020, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-import 'dart:ffi';
-import 'dart:math';
-
 import '../code_generator.dart';
-import '../config_provider/config_types.dart';
 
 import 'binding_string.dart';
 import 'utils.dart';
@@ -23,42 +19,35 @@ import 'writer.dart';
 /// follows.
 ///
 /// ```dart
-/// external int _sum(int a, int b);
-///
+/// extension type NativeLibrary(JSObject _) implements JSObject {
+///  external int _sum(int a, int b);
+/// }
+/// late NativeLibrary _lib;
 /// int sum(int a, int b) {
-///   return _sum(a, b);
+///   return _lib._sum(a, b);
 /// }
 ///
 /// ```
-class Func extends LookUpBinding {
+class Func extends Binding {
   final FunctionType functionType;
-  final bool exposeSymbolAddress;
   final bool exposeFunctionTypedefs;
-  final bool isLeaf;
-  final bool objCReturnsRetained;
-  final bool useNameForLookup;
-  late final String funcPointerName;
 
   /// Contains typealias for function type if [exposeFunctionTypedefs] is true.
   Typealias? _exposedFunctionTypealias;
 
   /// [originalName] is looked up in dynamic library, if not
   /// provided, takes the value of [name].
-  Func({
-    super.usr,
-    required String name,
-    super.originalName,
-    super.dartDoc,
-    required Type returnType,
-    List<Parameter>? parameters,
-    List<Parameter>? varArgParameters,
-    this.exposeSymbolAddress = false,
-    this.exposeFunctionTypedefs = false,
-    this.isLeaf = false,
-    this.objCReturnsRetained = false,
-    this.useNameForLookup = false,
-    super.isInternal,
-  })  : functionType = FunctionType(
+  Func(
+      {required String name,
+      super.dartDoc,
+      required Type returnType,
+      List<Parameter>? parameters,
+      List<Parameter>? varArgParameters,
+      this.exposeFunctionTypedefs = false,
+      super.isInternal,
+      required super.usr,
+      required super.originalName})
+      : functionType = FunctionType(
           returnType: returnType,
           parameters: parameters ?? const [],
           varArgParameters: varArgParameters ?? const [],
@@ -85,7 +74,7 @@ class Func extends LookUpBinding {
   }
 
   @override
-  BindingString toBindingString(Writer w) {
+  BindingString toBindingString(Writer w, {bool writeModuleBinding = false}) {
     final s = StringBuffer();
 
     if (dartDoc != null) {
@@ -159,13 +148,12 @@ class Func extends LookUpBinding {
         final userParam = Parameter(
             name: param.name,
             originalName: param.originalName,
-            type: (paramType.baseType as NativeFunc).type,
-            objCConsumed: false);
+            type: (paramType.baseType as NativeFunc).type);
         userArguments.add(userParam);
 
         final interopFnPtrName = '${param.name}_interopFnPtr';
-        final interopFnPtrParam = Parameter(
-            name: interopFnPtrName, type: param.type, objCConsumed: false);
+        final interopFnPtrParam =
+            Parameter(name: interopFnPtrName, type: param.type);
         interopArguments.add(interopFnPtrParam);
 
         final wasmSignature = (paramType.baseType as NativeFunc).wasmSignature;
@@ -200,25 +188,24 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
         final argPtrName = '${param.name}_structPtr';
 
         var paramConstructor =
-            'final $argPtrName = _stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n';
+            'final $argPtrName = _lib._stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n';
 
         int offset = 0;
         for (final paramMember in paramType.members) {
           if (paramMember.type is ConstantArray) {
             paramConstructor +=
-                'writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, $argPtrName + $offset);';
+                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, $argPtrName + $offset);';
           } else {
             paramConstructor +=
-                "setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+                "_lib.setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
           }
           offset += paramMember.type.sizeInBytes;
         }
         interopArgumentConstructors.add(paramConstructor);
-        interopArguments.add(Parameter(
-            name: argPtrName,
-            type: PointerType(paramType),
-            objCConsumed: false));
-        userArguments.add(param);
+        interopArguments
+            .add(Parameter(name: argPtrName, type: PointerType(paramType)));
+        userArguments.add(Parameter(
+            type: Struct(name: 'Dart${paramType.name}'), name: param.name));
       } else if (paramType is PointerType) {
         interopArguments.add(param);
         userArguments.add(param);
@@ -235,58 +222,57 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
     // 3) adjust the return type for the interop function to return void
     if (functionType.returnType is Struct) {
       final originalReturnType = functionType.returnType;
+
       interopReturnType =
           NativeType(SupportedNativeType.voidType).getDartType(w);
-
+      userReturnType = 'Dart${originalReturnType.getInteropDartType(w)}';
       final structType = functionType.returnType as Struct;
       final structName = structType.name;
 
       final outParam = Parameter(
-          name: '${structName}_out',
-          type: PointerType(originalReturnType),
-          objCConsumed: false);
-      interopArgumentConstructors.add(
-          'final ${outParam.name} = _stackAlloc<${structType.name}>(${structType.sizeInBytes});');
+          name: '${structName}_out', type: PointerType(originalReturnType));
+      interopArgumentConstructors
+          .add('final ${outParam.name} = ${structType.name}.stackAlloc();');
 
       interopArguments.insert(0, outParam);
 
-      var outFieldNames = <String>[];
+      // var outFieldNames = <String>[];
 
-      var offset = 0;
+      // var offset = 0;
 
-      for (final field in structType.members) {
-        if (field.type is! NativeType && field.type is! PointerType) {
-          throw Exception('Unsupported : ${field.type}');
-        }
+      // for (final field in structType.members) {
+      //   if (field.type is! NativeType && field.type is! PointerType) {
+      //     throw Exception('Unsupported : ${field.type}');
+      //   }
 
-        late String jsToDart;
-        String wrapper = '';
-        final dartType = field.type.getDartType(w);
+      //   late String jsToDart;
+      //   String wrapper = '';
+      //   final dartType = field.type.getDartType(w);
 
-        if (field.type is ConstantArray) {
-          var arrayType = field.type as ConstantArray;
-          wrapper = "${arrayType.getDartType(w)}(${arrayType.length}, ";
-          jsToDart = ".toDartInt as _PtrType, this)";
-        } else if (dartType == 'double') {
-          jsToDart = '.toDartDouble';
-        } else if (dartType == 'int') {
-          jsToDart = '.toDartInt';
-        } else if (field.type is PointerType) {
-          final ptrType = field.type as PointerType;
-          final inner = ptrType.child.getWasmType(w);
-          wrapper = 'Pointer(';
-          jsToDart = '.toDartInt as _PtrType<$inner>, this)';
-        }
+      //   if (field.type is ConstantArray) {
+      //     var arrayType = field.type as ConstantArray;
+      //     wrapper = '${arrayType.getDartType(w)}(${arrayType.length}, ';
+      //     jsToDart = '.toDartInt as Pointer)';
+      //   } else if (dartType == 'double') {
+      //     jsToDart = '.toDartDouble';
+      //   } else if (dartType == 'int') {
+      //     jsToDart = '.toDartInt';
+      //   } else if (field.type is PointerType) {
+      //     final ptrType = field.type as PointerType;
+      //     final inner = ptrType.child.getWasmType(w);
+      //     wrapper = 'Pointer(';
+      //     jsToDart = '.toDartInt as Pointer<$inner>)';
+      //   }
 
-        var fieldName = '${structName}_${field.name}';
-        outFieldNames.add(fieldName);
+      //   var fieldName = '${structName}_${field.name}';
+      //   outFieldNames.add(fieldName);
 
-        interopReturnTypeConstructors.add(
-            "final $fieldName = ${wrapper}getValue(${outParam.name} + ${offset}, '${field.type.llvmType}')$jsToDart;");
-        offset += field.type.sizeInBytes;
-      }
+      //   interopReturnTypeConstructors.add(
+      //       "final $fieldName = ${wrapper}getValue(${outParam.name} + ${offset}, '${field.type.llvmType}')$jsToDart;");
+      //   offset += field.type.sizeInBytes;
+      // }
       interopReturnTypeConstructors.add(
-          "return ${originalReturnType.getDartType(w)}(${outFieldNames.join(',')});");
+          'return ${outParam.name}.toDart();');
       // if the return type is a PointerAddress, we need to wrap inside a Pointer
     } else if (functionType.returnType is PointerType ||
         functionType.returnType.typealiasType is PointerType) {
@@ -307,8 +293,7 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
       } else {
         userReturnType = ptrType.getDartType(w);
       }
-      interopReturnTypeConstructors
-          .add('return $userReturnType(result, this);');
+      interopReturnTypeConstructors.add('return result;');
     } else if (functionType.returnType is EnumClass) {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
@@ -337,22 +322,22 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {
         var pointerType = p.type.typealiasType as PointerType;
-
-        // print((p.type.typealiasType as PointerType).getDartType(w));
-        // print((p.type.typealiasType as PointerType).getInteropDartType(w));
         return '${p.name}.addr as ${pointerType.getWasmType(w)}';
       }
 
       return '${p.name}';
     }).join(',');
 
-    s.write(
-        '''external $interopReturnType $interopFunctionName($interopArgsString);\n''');
-    s.write('''$userReturnType $userFunctionName($userArgsString) {
-            ${interopArgumentConstructors.join("\n")}
-            final result = $interopFunctionName($invokeInteropArgsString);
-            ${interopReturnTypeConstructors.join("\n")}
-}''');
+    if (writeModuleBinding) {
+      s.write(
+          '''external $interopReturnType $interopFunctionName($interopArgsString);\n''');
+    } else {
+      s.write('''$userReturnType $userFunctionName($userArgsString) {
+              ${interopArgumentConstructors.join("\n")}
+              final result = _lib.$interopFunctionName($invokeInteropArgsString);
+              ${interopReturnTypeConstructors.join("\n")}
+  }''');
+    }
 
     return BindingString(type: BindingStringType.func, string: s.toString());
   }
@@ -369,28 +354,21 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
   }
 }
 
-/// Represents a Parameter, used in [Func], [Typealias], [ObjCMethod], and
-/// [ObjCBlock].
+/// Represents a Parameter, used in [Func] or [Typealias]
 class Parameter {
   final String? originalName;
   String name;
   Type type;
-  final bool objCConsumed;
 
   Parameter({
     String? originalName,
     this.name = '',
     required Type type,
-    required this.objCConsumed,
   })  : originalName = originalName ?? name,
         // A [NativeFunc] is wrapped with a pointer because this is a shorthand
         // used in C for Pointer to function.
         type = type.typealiasType is NativeFunc ? PointerType(type) : type;
 
   String getNativeType({String varName = ''}) =>
-      '${type.getNativeType(varName: varName)}'
-      '${objCConsumed ? ' __attribute__((ns_consumed))' : ''}';
-
-  // @override
-  // String toString() => '$type $name';
+      '${type.getNativeType(varName: varName)}';
 }

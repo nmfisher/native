@@ -15,11 +15,8 @@ final _logger = Logger('jsgen.code_generator.writer');
 class Writer {
   final String? header;
 
-  /// Holds bindings, which lookup symbols.
-  final List<Binding> lookUpBindings;
-
-  /// Holds bindings which don't lookup symbols.
-  final List<Binding> noLookUpBindings;
+  final List<Binding> bindings;
+  final List<Binding> typeBindings;
 
   late String _className;
   String get className => _className;
@@ -67,13 +64,6 @@ class Writer {
 
   final Set<LibraryImport> _usedImports = {};
 
-  String _lookupFuncIdentifier = "LOOKUP";
-  String get lookupFuncIdentifier => _lookupFuncIdentifier;
-
-  late String _symbolAddressClassName;
-  late String _symbolAddressVariableName;
-  late String _symbolAddressLibraryVarName;
-
   /// Initial namers set after running constructor. Namers are reset to this
   /// initial state everytime [generate] is called.
   late UniqueNamer _initialTopLevelUniqueNamer, _initialWrapperLevelUniqueNamer;
@@ -84,11 +74,6 @@ class Writer {
   late UniqueNamer _wrapperLevelUniqueNamer;
   UniqueNamer get wrapperLevelUniqueNamer => _wrapperLevelUniqueNamer;
 
-  late String _arrayHelperClassPrefix;
-
-  /// Guaranteed to be a unique prefix.
-  String get arrayHelperClassPrefix => _arrayHelperClassPrefix;
-
   /// Set true after calling [generate]. Indicates if
   /// [generateSymbolOutputYamlMap] can be called.
   bool get canGenerateSymbolOutput => _canGenerateSymbolOutput;
@@ -97,8 +82,8 @@ class Writer {
   final bool silenceEnumWarning;
 
   Writer({
-    required this.lookUpBindings,
-    required this.noLookUpBindings,
+    required this.bindings,
+    required this.typeBindings,
     required String className,
     List<LibraryImport>? additionalImports,
     this.classDocComment,
@@ -106,8 +91,8 @@ class Writer {
     required this.silenceEnumWarning,
     required this.nativeEntryPoints,
   }) {
-    final globalLevelNameSet = noLookUpBindings.map((e) => e.name).toSet();
-    final wrapperLevelNameSet = lookUpBindings.map((e) => e.name).toSet();
+    final globalLevelNameSet = bindings.map((e) => e.name).toSet();
+    final wrapperLevelNameSet = bindings.map((e) => e.name).toSet();
     final allNameSet = <String>{}
       ..addAll(globalLevelNameSet)
       ..addAll(wrapperLevelNameSet);
@@ -136,38 +121,6 @@ class Writer {
         );
       }
     }
-
-    /// Resolve name conflicts of identifiers used for SymbolAddresses.
-    _symbolAddressClassName = _resolveNameConflict(
-      name: '_SymbolAddresses',
-      makeUnique: allLevelsUniqueNamer,
-      markUsed: [_initialWrapperLevelUniqueNamer, _initialTopLevelUniqueNamer],
-    );
-    _symbolAddressVariableName = _resolveNameConflict(
-      name: 'addresses',
-      makeUnique: _initialWrapperLevelUniqueNamer,
-      markUsed: [_initialWrapperLevelUniqueNamer],
-    );
-    _symbolAddressLibraryVarName = _resolveNameConflict(
-      name: '_library',
-      makeUnique: _initialWrapperLevelUniqueNamer,
-      markUsed: [_initialWrapperLevelUniqueNamer],
-    );
-
-    /// Finding a unique prefix for Array Helper Classes and store into
-    /// [_arrayHelperClassPrefix].
-    final base = 'ArrayHelper';
-    _arrayHelperClassPrefix = base;
-    var suffixInt = 0;
-    for (var i = 0; i < allNameSet.length; i++) {
-      if (allNameSet.elementAt(i).startsWith(_arrayHelperClassPrefix)) {
-        // Not a unique prefix, start over with a new suffix.
-        i = -1;
-        suffixInt++;
-        _arrayHelperClassPrefix = '$base$suffixInt';
-      }
-    }
-
     _resetUniqueNamersNamers();
   }
 
@@ -185,6 +138,11 @@ class Writer {
     return s;
   }
 
+  final _arrays = <ConstantArray>{};
+  void markArray(ConstantArray arr) {
+    _arrays.add(arr);
+  }
+
   /// Resets the namers to initial state. Namers are reset before generating.
   void _resetUniqueNamersNamers() {
     _topLevelUniqueNamer = _initialTopLevelUniqueNamer.clone();
@@ -193,12 +151,6 @@ class Writer {
 
   void markImportUsed(LibraryImport import) {
     _usedImports.add(import);
-  }
-
-  final _structs = <Struct>{};
-
-  void markStruct(Struct type) {
-    _structs.add(type);
   }
 
   /// Writes all bindings to a String.
@@ -229,8 +181,8 @@ class Writer {
       result.write(makeDoc('ignore_for_file: type=lint'));
     }
 
-    /// Write [lookUpBindings].
-    if (lookUpBindings.isNotEmpty) {
+    /// Write [bindings].
+    if (bindings.isNotEmpty) {
       // Write doc comment for wrapper class.
       if (classDocComment != null) {
         s.write(makeDartDoc(classDocComment!));
@@ -261,220 +213,188 @@ import 'dart:js_interop_unsafe';
 /// it can safely be interpreted/converted to a Dart String.
 ///
 ///
-sealed class NativeType<T> {}
 
-extension type _PtrType<T extends NativeType>(int addr) {
-  _PtrType<T> operator +(int offset) => _PtrType<T>(addr + offset);
-  _PtrType<U> cast<U extends NativeType>() => this as _PtrType<U>;
-}
-
-class Int32 extends NativeType<int> {
-  Int32._();
-}
-
-class Int64 extends NativeType<int> {
-  Int64._();
-}
-
-class Double extends NativeType<double> {
-  Double._();
-}
-
-class Float extends NativeType<double> {
-  Float._();
-}
-
-class Char extends NativeType<int> {
-  Char._();
-}
-
-class Void extends NativeType<void> {
-  Void._();
-}
-
-class NativeFunction<T> extends NativeType<Function> {
-  NativeFunction._();
-}
-
-abstract class Struct extends NativeType {}
-
-class Opaque extends Struct {}
-
-class Array<T extends NativeType> extends NativeType<Array> {
-  final int numElements;
-  final _PtrType start;
-  final NativeLibrary module;
-
-  Uint8List asUint8List() {
-    var length = numElements * sizeOf<T>();
-    return Uint8List.sublistView(
-        module.HEAPU8.toDart, start as int, (start as int) + length);
-  }
-
-  void setValue(Uint8List data) {
-    module.writeArrayToMemory(data.toJS, start);
-  }
-
-  Array(this.numElements, this.start, this.module);
-}
-
-extension CharPtr on Pointer<Char> {
-  void setValue(String value) {
-    var len = module._lengthBytesUTF8(value);
-    module._stringToUTF8(value, this.addr, len);
-  }
-
-  String getValue() {
-    return module._UTF8ToString(this.addr);
+extension type Char._(int value) implements NativeType {
+  static Pointer<Char> stackAlloc(int count) {
+    return _lib._stackAlloc<Char>(4 * count);
   }
 }
 
-class Pointer<T extends NativeType> extends NativeType<int> {
-  final NativeLibrary module;
-  final _PtrType<T> addr;
+extension type const NativeType(int addr) {}
+extension type const Int32._(int addr) implements NativeType {
+  static Pointer<Int32> stackAlloc(int count) {
+    return _lib._stackAlloc<Int32>(4 * count);
+  }
+}
+extension type Int64(int addr) implements NativeType {
+  static Pointer<Int64> stackAlloc(int count) {
+    return _lib._stackAlloc<Int64>(8 * count);
+  }
+}
+extension type Float32._(int addr) implements NativeType {
+  static Pointer<Float32> stackAlloc(int count) {
+    return _lib._stackAlloc<Float32>(4 * count);
+  }
+}
+extension type Float64._(int addr) implements NativeType {
+  static Pointer<Float64> stackAlloc(int count) {
+    return _lib._stackAlloc<Float64>(8 * count);
+  }
+}
+extension type NativeFunction<T>._(int addr) implements NativeType {}
+extension type Void._(int addr) implements NativeType {}
 
-  final llvmType = switch (T) {
-    Double => "double",
-    Float => "float",
-    Int32 => "i32",
-    Int64 => "i64",
-    Char => "i32",
-    Pointer => "*",
-    _ => T.toString().startsWith("Pointer")
-        ? "*"
-        : "s"
-        // throw UnimplementedError("Failed to get LLVM IR type for \$T")
-  };
+extension type Pointer<T extends NativeType>(int addr) implements NativeType {
+  String get llvmType => '*';
+  int size() => 4;
 
-  Pointer(this.addr, this.module);
+  static Pointer<Pointer<T>> stackAlloc<T extends NativeType>(int count) {
+    return _lib._stackAlloc<T>(4 * count) as Pointer<Pointer<T>>;
+  }
 
-  Pointer<T> operator +(int offset) =>
-      Pointer<T>(addr + (offset * sizeOf<T>()), module);
+  Pointer<T> operator +(int numElements) => Pointer<T>(addr + (numElements * size()));
   Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
 }
 
-extension PtrPtr<T extends NativeType> on Pointer<Pointer<T>> {
-  void setValue(Pointer<T> value) {
-    module.setValue(addr, (value.addr as int).toJS, llvmType);
-  }
+extension Int32Pointer on Pointer<Int32> {
+  String get llvmType => 'i32';
 
-  Pointer<T> getValue() {
-    var jsValue = module.getValue(this.addr, llvmType);
-    return Pointer<T>(jsValue.toDartInt as _PtrType<T>, module);
-  }
-}
-
-extension Int32Ptr on Pointer<Int32> {
   void setValue(int value) {
-    module.setValue(addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   int getValue() {
-    var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartInt;
+    return _lib.getValue(this, llvmType).toDartInt;
   }
 }
 
-extension Int64Ptr on Pointer<Int64> {
+extension Int64Pointer on Pointer<Int64> {
+  String get llvmType => 'i64';
+
   void setValue(int value) {
-    module.setValue(addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   int getValue() {
-    var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartInt;
+    return _lib.getValue(this, llvmType).toDartInt;
   }
 }
 
-extension FloatPtr on Pointer<Float> {
+extension Float32Pointer on Pointer<Float32> {
+  String get llvmType => 'float';
+
   void setValue(double value) {
-    module.setValue(addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   double getValue() {
-    var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartDouble;
+    return _lib.getValue(this, llvmType).toDartDouble;
   }
 }
 
-extension DoublePtr on Pointer<Double> {
+extension Float64Pointer on Pointer<Float64> {
+  String get llvmType => 'double';
+
   void setValue(double value) {
-    module.setValue(addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   double getValue() {
-    var jsValue = module.getValue(this.addr, llvmType);
-    return jsValue.toDartDouble;
+    return _lib.getValue(this, llvmType).toDartDouble;
   }
 }
 
 extension StringUtils on String {
-  self.Pointer<Char> toNativePointer(NativeLibrary module) {
-    var len = module._lengthBytesUTF8(this) + 1;
-    var ptr = module._stackAlloc<Char>(len);
-    module._stringToUTF8(this, ptr, len);
-    return Pointer<Char>(ptr, module);
+  self.Pointer<Char> toNativePointer() {
+    var len = _lib._lengthBytesUTF8(this) + 1;
+    var ptr = _lib._stackAlloc<Char>(len);
+    _lib._stringToUTF8(this, ptr, len);
+    return ptr;
   }
 }
 
-extension type NativeLibrary(JSObject _) implements JSObject {
-  
-  @JS('stackAlloc')
-  external _PtrType<T> _stackAlloc<T extends NativeType>(int numBytes);
-  self.Pointer<T> stackAlloc<T extends NativeType>(int count) {
-    final numBytes = sizeOf<T>() * count;
-    var addr = _stackAlloc<T>(numBytes);
-    return Pointer<T>(addr, this);
+extension CharPtr on Pointer<Char> {
+  void setValue(String value) {
+    var len = _lib._lengthBytesUTF8(value);
+    _lib._stringToUTF8(value, this, len);
+  }
+ 
+  String getValue() {
+    return _lib._UTF8ToString(this);
+   }
+}
+
+extension type Struct(int addr) implements NativeType {}
+abstract class DartStruct {}
+
+extension type const Array<T extends NativeType>._(
+    ({int numElements, Pointer<T> addr}) _) {
+  Array<U> cast<U extends NativeType>() => this as Array<U>;
+
+  Uint8List asUint8List() {
+    final start = _.addr;
+    final end = _.addr + _.numElements;
+
+    return Uint8List.sublistView(
+      _lib.HEAPU8.toDart,
+      start.addr,
+      end.addr,
+    );
   }
 
-  external JSNumber getValue(_PtrType addr, String llvmType);
-  external void setValue(
-      _PtrType addr, JSNumber value, String llvmType);
+  void setValue(Uint8List data) {
+    _lib.writeArrayToMemory(data.toJS, _.addr);
+  }
+}
+
+late _NativeLibrary _lib;
+
+class NativeLibrary {
+  static void initBindings(String moduleName) {
+    _lib = globalContext.getProperty(moduleName.toJS);
+  }
+}
+
+extension type _NativeLibrary(JSObject _) implements JSObject {
+  @JS('stackAlloc')
+  external Pointer<T> _stackAlloc<T extends NativeType>(int numBytes);
+
+  external Pointer<T> _malloc<T extends NativeType>(int numBytes);
+  external void _free(Pointer ptr);
+
+  external JSNumber getValue(Pointer addr, String llvmType);
+  external void setValue(Pointer addr, JSNumber value, String llvmType);
 
   @JS("lengthBytesUTF8")
   external int _lengthBytesUTF8(String str);
 
   @JS("UTF8ToString")
-  external String _UTF8ToString(_PtrType<Char> ptr);
+  external String _UTF8ToString(Pointer<Char> ptr);
 
   @JS("stringToUTF8")
   external void _stringToUTF8(
-      String str, _PtrType<Char> ptr, int maxBytesToWrite);
+      String str, Pointer<Char> ptr, int maxBytesToWrite);
 
-  external void writeArrayToMemory(JSUint8Array data, _PtrType ptr);
+  external void writeArrayToMemory(JSUint8Array data, Pointer ptr);
 
-  external _PtrType<NativeFunction> addFunction(
-      JSFunction f, String signature);
-  external void removeFunction(_PtrType<NativeFunction> f);
+  external Pointer<NativeFunction> addFunction(JSFunction f, String signature);
+  external void removeFunction(Pointer<NativeFunction> f);
   external JSUint8Array get HEAPU8;
 
 ''');
       s.write('\n');
-      for (final b in lookUpBindings) {
-        s.write(b.toBindingString(this).string);
+      for (final b in bindings) {
+        s.write(b.toBindingString(this, writeModuleBinding: true).string);
       }
       s.write('}\n\n');
-
-      s.write('''
-int sizeOf<T>() {
-  final size = switch (T) {
-    Int32 => 4,
-    Float => 4,
-    Pointer => sizeOf<Int32>(),
-    Int64 => 8,
-    Double => 8,
-    ${_structs.map((s) => "${s.name} => ${s.sizeInBytes},").join("\n")}
-    _ => T.toString().startsWith("Pointer")
-        ? sizeOf<Pointer>()
-        : throw UnimplementedError(T.toString())
-  };
-  return size;
-}\n''');
     }
 
-    /// Write [noLookUpBindings].
-    for (final b in noLookUpBindings) {
-      s.write(b.toBindingString(this).string);
+    for (final b in bindings) {
+      s.write(b.toBindingString(this, writeModuleBinding: false).string);
+    }
+
+    for (final b in typeBindings) {
+      s.write(b.toBindingString(this, writeModuleBinding: false).string);
     }
 
     // Write neccesary imports.
@@ -499,13 +419,7 @@ int sizeOf<T>() {
     return result.toString();
   }
 
-  List<Binding> get _allBindings => <Binding>[
-        ...noLookUpBindings,
-        ...lookUpBindings,
-      ];
-
   Map<String, dynamic> generateSymbolOutputYamlMap(String importFilePath) {
-    final bindings = _allBindings;
     if (!canGenerateSymbolOutput) {
       throw Exception('Invalid state: generateSymbolOutputYamlMap() '
           'called before generate()');
@@ -513,7 +427,7 @@ int sizeOf<T>() {
 
     // Warn for macros.
     final hasMacroBindings = bindings.any(
-        (element) => element is Constant && element.usr.contains('@macro@'));
+        (element) => element is Constant && element.usr!.contains('@macro@'));
     if (hasMacroBindings) {
       _logger.info('Removing all Macros from symbol file since they cannot '
           'be cross referenced reliably.');
@@ -522,11 +436,11 @@ int sizeOf<T>() {
     // Remove internal bindings and macros.
     bindings.removeWhere((element) {
       return element.isInternal ||
-          (element is Constant && element.usr.contains('@macro@'));
+          (element is Constant && element.usr!.contains('@macro@'));
     });
 
     // Sort bindings alphabetically by USR.
-    bindings.sort((a, b) => a.usr.compareTo(b.usr));
+    bindings.sort((a, b) => a.usr!.compareTo(b.usr!));
 
     final usesFfiNative = true;
 
@@ -556,118 +470,4 @@ int sizeOf<T>() {
     // If it's a framework header, use a <> style import.
     return '#import <$frameworkHeader>\n';
   }
-
-  /// Writes the Objective C code needed for the bindings, if any. Returns null
-  /// if there are no bindings that need generated ObjC code. This function does
-  /// not generate the output file, but the [outFilename] does affect the
-  /// generated code.
-  String? generateObjC(String outFilename) {
-    final outDir = p.dirname(outFilename);
-
-    final s = StringBuffer();
-    s.write('''
-#include <stdint.h>
-''');
-
-    for (final entryPoint in nativeEntryPoints) {
-      s.write(_objcImport(entryPoint, outDir));
-    }
-    s.write('''
-
-#if !__has_feature(objc_arc)
-#error "This file must be compiled with ARC enabled"
-#endif
-
-id objc_retain(id);
-id objc_retainBlock(id);
-''');
-
-    var empty = true;
-    for (final binding in _allBindings) {
-      final bindingString = binding.toObjCBindingString(this);
-      if (bindingString != null) {
-        empty = false;
-        s.write(bindingString.string);
-      }
-    }
-    return empty ? null : s.toString();
-  }
-}
-
-/// Manages the generated `_SymbolAddress` class.
-class SymbolAddressWriter {
-  final List<_SymbolAddressUnit> _addresses = [];
-
-  /// Used to check if we need to generate `_SymbolAddress` class.
-  bool get shouldGenerate => _addresses.isNotEmpty;
-
-  bool get hasNonNativeAddress => _addresses.any((e) => !e.native);
-
-  void addSymbol({
-    required String type,
-    required String name,
-    required String ptrName,
-  }) {
-    _addresses.add(_SymbolAddressUnit(type, name, ptrName, false));
-  }
-
-  void addNativeSymbol({required String type, required String name}) {
-    _addresses.add(_SymbolAddressUnit(type, name, '', true));
-  }
-
-  String writeObject(Writer w) {
-    final className = w._symbolAddressClassName;
-    final fieldName = w._symbolAddressVariableName;
-
-    if (hasNonNativeAddress) {
-      return 'late final $fieldName = $className(this);';
-    } else {
-      return 'const $fieldName = $className();';
-    }
-  }
-
-  String writeClass(Writer w) {
-    final sb = StringBuffer();
-    sb.write('class ${w._symbolAddressClassName} {\n');
-
-    if (hasNonNativeAddress) {
-      // Write Library object.
-      sb.write('final ${w._className} ${w._symbolAddressLibraryVarName};\n');
-      // Write Constructor.
-      sb.write('${w._symbolAddressClassName}('
-          'this.${w._symbolAddressLibraryVarName});\n');
-    } else {
-      // Native bindings are top-level, so we don't need a field here.
-      sb.write('const ${w._symbolAddressClassName}();');
-    }
-
-    for (final address in _addresses) {
-      sb.write('${address.type} get ${address.name} => ');
-
-      if (address.native) {
-        // For native fields and functions, we can use Native.addressOf to look
-        // up their address.
-        // The name of address getter shadows the actual element in the library,
-        // so we need to use a self-import.
-        final arg = '${w.selfImportPrefix}.${address.name}';
-        // sb.writeln('${w.ffiLibraryPrefix}.Native.addressOf($arg);');
-      } else {
-        // For other elements, the generator will write a private field of type
-        // Pointer which we can reference here.
-        sb.writeln('${w._symbolAddressLibraryVarName}.${address.ptrName};');
-      }
-    }
-    sb.write('}\n');
-    return sb.toString();
-  }
-}
-
-/// Holds the data for a single symbol address.
-class _SymbolAddressUnit {
-  final String type, name, ptrName;
-
-  /// Whether the symbol we're looking up has been declared with `@Native`.
-  final bool native;
-
-  _SymbolAddressUnit(this.type, this.name, this.ptrName, this.native);
 }

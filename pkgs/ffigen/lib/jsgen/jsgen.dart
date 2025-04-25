@@ -32,12 +32,7 @@ class JSGen {
     library.generateFile(gen, format: config.formatOutput);
     _logger.info(
         _successPen('Finished, Bindings generated in ${gen.absolute.path}'));
-
-    final objCGen = File(config.outputObjC.toFilePath());
-    if (library.generateObjCFile(objCGen)) {
-      _logger.info(_successPen('Finished, Objective C bindings generated '
-          'in ${objCGen.absolute.path}'));
-    }
+   
 
     if (config.symbolFile != null) {
       final symbolFileGen = File(config.symbolFile!.output.toFilePath());
