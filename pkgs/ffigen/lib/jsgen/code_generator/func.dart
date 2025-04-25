@@ -165,18 +165,14 @@ class Func extends Binding {
             .join(",");
         var forwardInternalFnArgs = <String>[];
         for (final param in paramFnType.type.parameters) {
-          if (param.type is PointerType) {
-            forwardInternalFnArgs.add("Pointer(${param.name}_internal, this)");
-          } else {
-            forwardInternalFnArgs.add("${param.name}_internal");
-          }
+            forwardInternalFnArgs.add('${param.name}_internal');
         }
 
         final paramConstructor = '''
 $internalFnType $internalFnName  = ($internalFnArgsSignature) {
   ${param.name}(${forwardInternalFnArgs.join(',')});
 };
-final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");\n''';
+final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignature");\n''';
         interopArgumentConstructors.add(paramConstructor);
 
         // if the argument is a struct:
@@ -197,7 +193,7 @@ final $interopFnPtrName = addFunction(${internalFnName}.toJS, "$wasmSignature");
                 '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, $argPtrName + $offset);';
           } else {
             paramConstructor +=
-                "_lib.setValue($argPtrName + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+                "_lib.setValue(($argPtrName.addr + $offset) as Pointer, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
           }
           offset += paramMember.type.sizeInBytes;
         }
