@@ -331,6 +331,12 @@ extension CharPtr on Pointer<Char> {
    }
 }
 
+extension DisposePointer<T extends NativeType> on Pointer<NativeFunction<T>> {
+  void dispose() {
+    _lib.removeFunction(this);
+  }
+}
+
 extension type Struct(int addr) implements NativeType {}
 abstract class DartStruct {}
 
