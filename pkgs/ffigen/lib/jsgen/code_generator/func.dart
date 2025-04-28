@@ -1,6 +1,7 @@
 // Copyright (c) 2020, the Dart project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+
 import '../code_generator.dart';
 
 import 'binding_string.dart';
@@ -73,6 +74,7 @@ class Func extends Binding {
     }
   }
 
+
   @override
   BindingString toBindingString(Writer w, {bool writeModuleBinding = false}) {
     final s = StringBuffer();
@@ -136,51 +138,15 @@ class Func extends Binding {
 
     // iterate over the arguments for the native function
     for (final param in functionType.parameters) {
-      final paramType = param.type;
+      final paramType = param.type;  
 
-      // if the argument is a function pointer:
-      // 1) adjust the user facing function params to accept a matching Dart
-      //    function argument
-      // 2) inside the user-facing function, construct an interop type with
-      //    addFunction
-      if (paramType.baseType is NativeFunc) {
-        final paramFnType = paramType.baseType as NativeFunc;
-        final userParam = Parameter(
-            name: param.name,
-            originalName: param.originalName,
-            type: (paramType.baseType as NativeFunc).type);
-        userArguments.add(userParam);
-
-        final interopFnPtrName = '${param.name}_interopFnPtr';
-        final interopFnPtrParam =
-            Parameter(name: interopFnPtrName, type: param.type);
-        interopArguments.add(interopFnPtrParam);
-
-        final wasmSignature = (paramType.baseType as NativeFunc).wasmSignature;
-
-        final internalFnName = "${param.name}_internal";
-        var internalFnType = paramFnType.type.getInteropDartType(w);
-        var internalFnArgsSignature = paramFnType.type.parameters
-            .map((p) => "${p.name}_internal")
-            .join(",");
-        var forwardInternalFnArgs = <String>[];
-        for (final param in paramFnType.type.parameters) {
-            forwardInternalFnArgs.add('${param.name}_internal');
-        }
-
-        final paramConstructor = '''
-$internalFnType $internalFnName  = ($internalFnArgsSignature) {
-  ${param.name}(${forwardInternalFnArgs.join(',')});
-};
-final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignature");\n''';
-        interopArgumentConstructors.add(paramConstructor);
-
-        // if the argument is a struct:
-        // 1) inside the user-facing function, stack-allocate memory for the
-        //    struct
-        // 2) populate the memory with the values from the Dart class
-        // 3) adjust the interop argument to accept a pointer
-      } else if (paramType is Struct) {
+      // if the argument is a struct:
+      // 1) inside the user-facing function, stack-allocate memory for the
+      //    struct
+      // 2) populate the memory with the values from the Dart class
+      // 3) adjust the interop argument to accept a pointer
+          
+      if (paramType is Struct) {
         final argPtrName = '${param.name}_structPtr';
 
         var paramConstructor =
@@ -203,6 +169,26 @@ final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignatu
         userArguments.add(Parameter(
             type: Struct(name: 'Dart${paramType.name}'), name: param.name));
       } else if (paramType is PointerType) {
+        final child = paramType.child;
+        
+        
+        // if the argument is a function pointer, the user-facing method takes 
+        // the same Pointer type as an argument
+        // this means we need to give the user some way of converting Dart functions
+        // to Pointer types.
+        // we do this with an extension method, e.g.
+        // ```
+        // final callback = (int val) {
+        //   ...
+        // }
+        // final fnPtr = callback.addFunction()
+        // native_method_with_fn_ptr(fnPtr);
+        // fnPtr.dispose()
+        // ```
+        if(child is NativeFunc) {
+          w.markNativeFunction(child.type);
+        }
+      
         interopArguments.add(param);
         userArguments.add(param);
       } else {
@@ -255,7 +241,7 @@ final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignatu
       //     jsToDart = '.toDartInt';
       //   } else if (field.type is PointerType) {
       //     final ptrType = field.type as PointerType;
-      //     final inner = ptrType.child.getWasmType(w);
+      //     final inner = ptrType.child.getWasmInteropType(w);
       //     wrapper = 'Pointer(';
       //     jsToDart = '.toDartInt as Pointer<$inner>)';
       //   }
@@ -309,7 +295,7 @@ final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignatu
       }
 
       if (p.type is PointerType) {
-        return '${p.name}.addr as ${p.type.getWasmType(w)}';
+        return '${p.name}.addr as ${p.type.getWasmInteropType(w)}';
       }
 
       if (p.type is EnumClass) {
@@ -318,7 +304,7 @@ final $interopFnPtrName = _lib.addFunction(${internalFnName}.toJS, "$wasmSignatu
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {
         var pointerType = p.type.typealiasType as PointerType;
-        return '${p.name}.addr as ${pointerType.getWasmType(w)}';
+        return '${p.name}.addr as ${pointerType.getWasmInteropType(w)}';
       }
 
       return '${p.name}';

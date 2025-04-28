@@ -69,9 +69,47 @@ class FunctionType extends Type {
     final arg = dartTypeParameters.map<String>((p) => p.type.getNativeType());
     return '${returnType.getNativeType()} (*$varName)(${arg.join(', ')})';
   }
+
+    String get wasmSignature {
+    var ft = this is Typealias
+        ? typealiasType as FunctionType
+        : this as FunctionType;
+    var signature = '${ft.returnType.wasmType}';
+    
+    for (final param in ft.parameters) {
+      signature += param.type.wasmType;
+    }
+    return signature;
+  }
+
+  
+  String getExtensionMethod(Writer w, int index) {
+    final s = StringBuffer();
+    // print("Getting extension method for ${this.getDartType(w)} ck ${cacheKey()}");
+    s.write('''extension NativeFunctionPointer$index on ${getInteropDartType(w)} {
+
+    Pointer<NativeFunction<${getDartType(w)}>> addFunction() {
+      return _lib.addFunction(this.toJS, '${wasmSignature}').cast();
+  }
+    }
+    
+    extension DisposePointer${index} on Pointer<NativeFunction<${getDartType(w)}>> {
+      void dispose() {
+        _lib.removeFunction(this);
+      }
+    }
+    ''');
+    return s.toString();
+  }
     
   @override
-  String cacheKey() => _getTypeImpl(false, (Type t) => t.cacheKey());
+  String cacheKey() {
+    final ck = _getTypeImpl(false, (Type t) => t.cacheKey());
+    return ck;
+  }
+
+  @override
+  int get hashCode => cacheKey().hashCode;
 
   @override
   void addDependencies(Set<Binding> dependencies) {
@@ -144,33 +182,7 @@ class NativeFunc extends Type {
   String get llvmType => throw Exception();
 
   @override
-  String getWasmType(Writer w) => getInteropDartType(w);
-
-  String get wasmSignature {
-    var ft = _type is Typealias
-        ? _type.typealiasType as FunctionType
-        : _type as FunctionType;
-    var signature = "";
-    var returnType = ft.returnType;
-    if (returnType is NativeType) {
-      signature += returnType.wasmType;
-    } else if (returnType is PointerType) {
-      signature += returnType.wasmType;
-    } else {
-      throw UnsupportedError(returnType.toString());
-    }
-    for (final param in ft.parameters) {
-      var paramType = param.type;
-      if (paramType is NativeType) {
-        signature += paramType.wasmType;
-      } else if (paramType is PointerType) {
-        signature += paramType.wasmType;
-      } else {
-        throw UnsupportedError(returnType.toString());
-      }
-    }
-    return signature;
-  }
+  String getWasmInteropType(Writer w) => getInteropDartType(w);
 
   @override
   int get sizeInBytes => throw UnimplementedError();

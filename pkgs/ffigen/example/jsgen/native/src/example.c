@@ -81,6 +81,10 @@ void EMSCRIPTEN_KEEPALIVE accept_fn_pointer_with_no_args(void(*callback)()) {
     callback();
 }
 
+void EMSCRIPTEN_KEEPALIVE accept_fn_typedef_arg(FunctionTypedef arg) {
+    arg(NULL);
+}
+
 void EMSCRIPTEN_KEEPALIVE accept_fn_pointer_with_primitive_args(void(*callback)(int arg)) {
     if (callback != NULL) {
         callback(42);

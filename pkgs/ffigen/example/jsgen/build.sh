@@ -15,4 +15,4 @@ emcc --no-entry \
     -o example_lib.js \
     ../native/src/example.c || exit -1;
 cp ../native/js/main.js .
-/Users/nickfisher/Documents/v8/v8/out/arm64.release/d8 --module main.js
+node main.js

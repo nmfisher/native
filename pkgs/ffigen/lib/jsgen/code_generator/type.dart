@@ -38,8 +38,10 @@ abstract class Type {
   /// Returns true if the type is a [Compound] and is incomplete.
   bool get isIncompleteCompound => false;
 
+  String get wasmType => throw UnimplementedError();
+
   /// Returns the Dart type of the Type. This is only used for pointers.
-  String getWasmType(Writer w) =>
+  String getWasmInteropType(Writer w) =>
       throw UnsupportedError('No mapping for type: $this');
 
   /// Returns the Dart type of the Type. This is the type that is passed from
@@ -99,7 +101,7 @@ abstract class BindingType extends Binding implements Type {
   bool get isIncompleteCompound => false;
 
   @override
-  String getWasmType(Writer w) =>
+  String getWasmInteropType(Writer w) =>
       throw UnsupportedError('No WASM type for $this');
 
   @override

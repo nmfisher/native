@@ -63,7 +63,7 @@ class NativeType extends Type {
   String getInteropDartType(Writer w) => _dartType;
 
   @override
-  String getWasmType(Writer w) {
+  String getWasmInteropType(Writer w) {
     if (_nativeType == 'char') {
       return 'Char';
     }

@@ -38,8 +38,9 @@ abstract class Compound extends BindingType {
   /// `struct` or `union`, depending on whether the declaration is a typedef.
   final String nativeType;
 
-  // @override
-  // String getWasmType(Writer w) => originalName;
+  ///
+  ///
+  String get wasmType => '*';
 
   Compound({
     super.usr,
@@ -97,7 +98,7 @@ abstract class Compound extends BindingType {
       return 'Array<'
           '${_getInlineArrayTypeString(type.child, w)}>';
     }
-    return type.getWasmType(w);
+    return type.getWasmInteropType(w);
   }
 
   @override
@@ -141,7 +142,7 @@ extension ${name}Ext on Pointer<$name> {
       if (field.type is ConstantArray) {
         var arrType = field.type as ConstantArray;
         s.write(
-            'var ${field.name} = Array<${field.type.baseArrayType.getWasmType(w)}>._((addr: (addr as Pointer).cast(), numElements: ${arrType.length}));\n');
+            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: (addr as Pointer).cast(), numElements: ${arrType.length}));\n');
       } else if (field.type is PointerType) {
         s.write('var ${field.name} = (addr as Pointer) + $offset;\n');
       } else {

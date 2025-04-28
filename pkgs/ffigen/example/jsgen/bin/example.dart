@@ -39,26 +39,41 @@ void main(List<String> args) {
       struct_as_argument(structArg) == 6, struct_as_argument(structArg));
   print("structArgument done");
   var done = false;
-  accept_fn_pointer_with_no_args(() {
+  void Function() callback = () {
     done = true;
-  });
+  };
+
+  
+  final fnPtr = callback.addFunction();
+  accept_fn_pointer_with_no_args(fnPtr.cast());
+  assert(done);
+  
   done = false;
   print("voidFunctionArgument done");
 
-  accept_fn_pointer_with_primitive_args((intVal) {
+  fnPtr.dispose();
+
+  final fnPtr2 = (int intVal) {
     print(intVal + 10);
     done = true;
-  });
+  }.addFunction();
+
+  accept_fn_pointer_with_primitive_args(fnPtr2);
+
+  fnPtr.dispose();
 
   assert(done);
 
   done = false;
 
-  
-  accept_fn_pointer_with_ptr_args((structPtr) {
+  final fnPtr3 =  (Pointer ptr) {
     done = true;
-  });
+  }.addFunction();
   
+  accept_fn_pointer_with_ptr_args(fnPtr3);
+  done = false;
+  accept_fn_typedef_arg(fnPtr3.cast());
+  fnPtr3.dispose();
 
   assert(done);
 

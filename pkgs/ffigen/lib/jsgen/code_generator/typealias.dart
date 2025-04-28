@@ -67,8 +67,11 @@ class Typealias extends BindingType {
             (!genFfiDartType && type is! Typealias) ? 'Dart$name' : null,
         super(
           name: genFfiDartType ? 'Native$name' : name,
-        ) {
+        );
 
+  @override
+  String get wasmType { 
+    return type.wasmType;
   }
 
   @override
@@ -124,7 +127,7 @@ class Typealias extends BindingType {
       type.getNativeType(varName: varName);
 
   @override
-  String getWasmType(Writer w) => type.getWasmType(w);
+  String getWasmInteropType(Writer w) => type.getWasmInteropType(w);
 
   @override
   String getDartType(Writer w) {

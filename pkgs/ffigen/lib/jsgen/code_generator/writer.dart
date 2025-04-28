@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 
@@ -142,6 +143,11 @@ class Writer {
   void markArray(ConstantArray arr) {
     _arrays.add(arr);
   }
+  
+  final _nativeFunctions = <FunctionType>{};
+  void markNativeFunction(FunctionType func) {
+    _nativeFunctions.add(func);
+  }
 
   /// Resets the namers to initial state. Namers are reset before generating.
   void _resetUniqueNamersNamers() {
@@ -255,6 +261,7 @@ extension type Pointer<T extends NativeType>(int addr) implements NativeType {
   Pointer<T> operator +(int numElements) => Pointer<T>(addr + (numElements * size()));
   Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
 }
+final nullptr = Pointer(0);
 
 extension Int32Pointer on Pointer<Int32> {
   String get llvmType => 'i32';
@@ -396,6 +403,15 @@ extension type _NativeLibrary(JSObject _) implements JSObject {
     for (final b in typeBindings) {
       s.write(b.toBindingString(this, writeModuleBinding: false).string);
     }
+
+    var written = <String>{};
+    _nativeFunctions.forEachIndexed((i, fn) {
+      if(written.contains(fn.cacheKey())) {
+        return;
+      }
+      s.write(fn.getExtensionMethod(this, i));
+      written.add(fn.cacheKey());
+    });
 
     // Write neccesary imports.
     for (final lib in _usedImports) {

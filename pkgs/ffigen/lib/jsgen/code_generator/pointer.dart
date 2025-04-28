@@ -37,7 +37,7 @@ class PointerType extends Type {
     if (child is PointerType || child is Struct) {
       return 'Pointer<${child.getDartType(w)}>';
     }
-    return 'Pointer<${child.getWasmType(w)}>';
+    return 'Pointer<${child.getWasmInteropType(w)}>';
   }
 
   @override
@@ -47,12 +47,12 @@ class PointerType extends Type {
     } else if (child is PointerType || child is Struct) {
       return '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
     } else {
-      return '${w.selfImportPrefix}.Pointer<${child.getWasmType(w)}>';
+      return '${w.selfImportPrefix}.Pointer<${child.getWasmInteropType(w)}>';
     }
   }
 
   @override
-  String getWasmType(Writer w) => getInteropDartType(w);
+  String getWasmInteropType(Writer w) => getInteropDartType(w);
 
   @override
   String getNativeType({String varName = ''}) =>
@@ -97,7 +97,7 @@ class ConstantArray extends PointerType {
 
   @override
   String getDartType(Writer w) {
-    return 'Array<${child.getWasmType(w)}>';
+    return 'Array<${child.getWasmInteropType(w)}>';
   }
 
   @override
