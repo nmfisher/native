@@ -32,7 +32,7 @@ Global? parseVarDeclaration(clang_types.CXCursor cursor) {
   final type = cType.toCodeGenType(
       // Native fields can be arrays, but if we use the lookup based method of
       // reading fields there's no way to turn a Pointer into an array.
-      supportNonInlineArray: config.ffiNativeConfig.enabled);
+      supportNonInlineArray: false);
   if (type.baseType is UnimplementedType) {
     _logger.fine('---- Removed Global, reason: unsupported type: '
         '${cursor.completeStringRepr()}');
@@ -47,7 +47,7 @@ Global? parseVarDeclaration(clang_types.CXCursor cursor) {
     type: type,
     dartDoc: getCursorDocComment(cursor),
     constant: cType.isConstQualified,
-    nativeConfig: config.ffiNativeConfig,
+
   );
   bindingsIndex.addGlobalVarToSeen(usr, global);
 

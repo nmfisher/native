@@ -272,10 +272,6 @@ class YamlConfig implements Config {
       _unnamedEnumsAsInt.shouldInclude(declaration.originalName);
   late YamlIncluder _unnamedEnumsAsInt;
 
-  @override
-  FfiNativeConfig get ffiNativeConfig => _ffiNativeConfig;
-  late FfiNativeConfig _ffiNativeConfig;
-
   /// Where to ignore compiler warnings/errors in source header files.
   @override
   bool ignoreSourceErrors = false;
@@ -834,11 +830,7 @@ class YamlConfig implements Config {
                 ],
               )
             ],
-            transform: (node) => ffiNativeExtractor(node.value),
           ),
-          defaultValue: (node) => const FfiNativeConfig(enabled: false),
-          resultOrDefault: (node) =>
-              _ffiNativeConfig = (node.value) as FfiNativeConfig,
         ),
         HeterogeneousMapEntry(
           key: strings.silenceEnumWarning,

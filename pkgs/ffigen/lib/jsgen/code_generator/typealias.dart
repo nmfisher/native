@@ -155,8 +155,8 @@ class Typealias extends BindingType {
   int get hashCode => usr.hashCode;
 
   @override
-  String get llvmType => throw UnimplementedError();
+  String get llvmType => typealiasType.llvmType;
 
   @override
-  int get sizeInBytes => throw UnimplementedError();
+  int get sizeInBytes => typealiasType.sizeInBytes;
 }

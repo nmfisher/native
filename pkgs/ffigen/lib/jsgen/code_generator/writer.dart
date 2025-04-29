@@ -196,10 +196,11 @@ class Writer {
       // Write wrapper classs.
 
       s.write('''
-
+import '' as self;
 import 'dart:typed_data';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+
 
 ///
 /// Sub-classes of [NativeType] represent a "native" type (by which we mean a
@@ -228,6 +229,11 @@ extension type const Pointer<T extends NativeType>(int addr) implements int {
   Pointer<T> operator +(int byteOffset) =>
       Pointer<T>(this.addr + byteOffset);
   Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
+  void free() {
+    _lib._free(this);
+  }
+
+  int get address => addr;
 }
 
 base class PointerClass<T extends NativeType> extends NativeType {
@@ -247,9 +253,41 @@ base class PointerClass<T extends NativeType> extends NativeType {
   PointerClass<U> cast<U extends NativeType>() => this as PointerClass<U>;
 }
 
+extension type Null._(NativeType value) implements NativeType {
+
+}
+
+Pointer<NativeFunction<T>> addFunction<T>(JSFunction fn, String signature) {
+  return _lib.addFunction(fn, signature);
+}
+
 extension type Char._(NativeType value) implements NativeType {
   static Pointer<Char> stackAlloc(int count) {
     return Pointer<Char>(_lib._stackAlloc<Char>(4 * count));
+  }
+}
+
+extension type const Uint32._(NativeType nt) implements NativeType {
+  static Pointer<Uint32> stackAlloc(int count) {
+    return _lib._stackAlloc<Uint32>(4 * count);
+  }
+}
+
+extension type const Uint8._(NativeType nt) implements NativeType {
+  static Pointer<Uint8> stackAlloc(int count) {
+    return _lib._stackAlloc<Uint8>(4 * count);
+  }
+}
+
+extension type const Uint16._(NativeType nt) implements NativeType {
+  static Pointer<Uint16> stackAlloc(int count) {
+    return _lib._stackAlloc<Uint16>(4 * count);
+  }
+}
+
+extension type const Int16._(NativeType nt) implements NativeType {
+  static Pointer<Int16> stackAlloc(int count) {
+    return _lib._stackAlloc<Int16>(4 * count);
   }
 }
 
@@ -258,6 +296,7 @@ extension type const Int32._(NativeType nt) implements NativeType {
     return _lib._stackAlloc<Int32>(4 * count);
   }
 }
+
 extension type Int64(NativeType nt) implements NativeType {
   static Pointer<Int64> stackAlloc(int count) {
     return _lib._stackAlloc<Int64>(8 * count);
@@ -276,7 +315,23 @@ extension type Float64._(NativeType nt) implements NativeType {
 extension type NativeFunction<T>._(NativeType nt) implements NativeType {}
 extension type Void._(NativeType nt) implements NativeType {}
 
-Pointer<Void> nullptr = Pointer<Void>(0);
+Pointer<Never> nullptr = Pointer<Never>(0);
+
+extension PointerPointerClass<T extends NativeType>
+    on Pointer<PointerClass<T>> {
+  operator [](int i) => this + i;
+  operator []=(int i, Pointer<T> value) {
+    throw Exception();
+  }
+}
+
+extension fncp<T extends NativeType> on void Function(Pointer<T>) {
+  Pointer<NativeFunction<void Function(Pointer<T>)>> addFunction() {
+    var fnPtr = _lib.addFunction<void Function(Pointer<T>)>(this.toJS, "v");
+    return fnPtr;
+  }
+}
+
 
 extension Int32PointerClass on Pointer<Int32> {
   String get llvmType => 'i32';
@@ -318,6 +373,14 @@ extension Float32Pointer on Pointer<Float32> {
     final end = addr + (length * 4);
     return Float32List.sublistView(_lib.HEAPU8.toDart, start, end);
   }
+
+  double operator [](int i) {
+    return _lib.getValue(this + (i*4), 'f').toDartDouble;
+  }
+
+  operator []=(int i, double val) {
+    _lib.setValue(this + (i*4), val.toJS, 'f');
+  }
 }
 
 extension Float64Pointer on Pointer<Float64> {
@@ -339,7 +402,49 @@ extension Float64Pointer on Pointer<Float64> {
 }
 
 extension Uint8ListPointer on Uint8List {
-  PointerClass<Void> get addr {
+  Pointer<Uint8> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension Int16ListPointer on Int16List {
+  Pointer<Int16> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension UInt16ListPointer on Uint16List {
+  Pointer<Uint16> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension UInt32ListPointer on Uint32List {
+  Pointer<Uint32> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension Int32ListPointer on Int32List {
+  Pointer<Int32> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension Int64ListPointer on Int64List {
+  Pointer<Int64> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension Float32ListPointer on Float32List {
+  Pointer<Float32> get address {
+    throw UnimplementedError();
+  }
+}
+
+extension Float64ListPointer on Float64List {
+  Pointer<Float64> get address {
     throw UnimplementedError();
   }
 }
@@ -374,6 +479,10 @@ sealed class Struct extends NativeType {
   final Pointer _address;
 
   Struct(this._address);
+
+  static create<T extends Struct>() {
+    throw Exception();
+  }
 
 }
 

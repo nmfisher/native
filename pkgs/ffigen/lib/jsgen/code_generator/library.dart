@@ -36,11 +36,8 @@ class Library {
   }) {
     _findBindings(bindings, sort);
 
-    final codeGenBindings = this.bindings.where((b) => b is Func).toList();
-    final typeBindings = this.bindings.where((b) => b is! Func && b.name != 'true' && b.name != 'false').toList();
-    for (final binding in typeBindings) {
-      print(binding.name);
-    }
+    final codeGenBindings = this.bindings.where((b) => b is Func || b is Global).toList();
+    final typeBindings = this.bindings.where((b) => b is!Global && b is! Func && b.name != 'true' && b.name != 'false').toList();
 
     /// Handle any declaration-declaration name conflicts and emit warnings.
     final declConflictHandler = UniqueNamer({});

@@ -285,7 +285,7 @@ class Func extends Binding {
       }
 
       interopReturnTypeConstructors.add('return ${functionType.returnType.getDartType(w)}(result);');
-    } else if (functionType.returnType is EnumClass) {
+    } else if (functionType.returnType is EnumClass && !(functionType.returnType as EnumClass).generateAsInt) {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
     } else {
@@ -308,7 +308,11 @@ class Func extends Binding {
       }
 
       if (p.type is EnumClass) {
-        return '${p.name}.value';
+        if((p.type as EnumClass).generateAsInt) {
+          return '${p.name}';
+        } else {
+          return '${p.name}.value';
+        }
       }
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {

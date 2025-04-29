@@ -121,6 +121,7 @@ Type getCodeGenType(
     case clang_types.CXTypeKind.CXType_UInt:
     case clang_types.CXTypeKind.CXType_Int:
       return NativeType(SupportedNativeType.int32);
+    case clang_types.CXTypeKind.CXType_ULong:
     case clang_types.CXTypeKind.CXType_Long:
       return NativeType(SupportedNativeType.int64);
     case clang_types.CXTypeKind.CXType_Float:

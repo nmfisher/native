@@ -23,7 +23,6 @@ import 'writer.dart';
 /// ```
 class Global extends Binding {
   final Type type;
-  final FfiNativeConfig nativeConfig;
   final bool constant;
 
   Global({
@@ -33,11 +32,11 @@ class Global extends Binding {
     required this.type,
     super.dartDoc,
     this.constant = false,
-    this.nativeConfig = const FfiNativeConfig(enabled: false),
   });
 
   @override
   BindingString toBindingString(Writer w, { bool writeModuleBinding = false}) {
+    
     final s = StringBuffer();
     final globalVarName = name;
     if (dartDoc != null) {
@@ -47,31 +46,22 @@ class Global extends Binding {
     final ffiDartType = type.getInteropDartType(w);
     final cType = type.getInteropDartType(w);
 
-    if (nativeConfig.enabled) {
       if (type case final ConstantArray arr) {
         throw UnimplementedError();
       }
 
-      final pointerName =
-          w.wrapperLevelUniqueNamer.makeUnique('_$globalVarName');
+      final pointerName = '_$globalVarName';
 
-      s
-        ..writeln(makeNativeAnnotation(
-          w,
-          nativeType: cType,
-          dartName: pointerName,
-          nativeSymbolName: pointerName,
-          isLeaf: false,
-        ))
-        ..write('external ');
-      if (constant) {
-        s.write('final ');
-      }
-
-      s.writeln('$ffiDartType $pointerName;\n');
-    } else {
-      throw UnimplementedError();
-    }
+      if(writeModuleBinding) {
+        s.writeln('external Pointer<Int32> $pointerName;');
+      } else {
+        final isIntType = type.getDartType(w) == "int";
+        final isDoubleType = type.getDartType(w) == "double";
+        
+        s.write('''$ffiDartType get ${pointerName.replaceFirst('_', "")} {
+            return _lib.getValue(_lib.$pointerName, "${type.llvmType}")${isIntType ? ".toDartInt" : isDoubleType ? "toDartDouble" : ""};
+        }''');
+      }    
 
     return BindingString(type: BindingStringType.global, string: s.toString());
   }

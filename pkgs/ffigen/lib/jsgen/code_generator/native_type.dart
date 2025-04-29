@@ -33,9 +33,9 @@ class NativeType extends Type {
     SupportedNativeType.int32: NativeType._('int', 'int32_t', 4, 'i32', 'i'),
     SupportedNativeType.int64: NativeType._('int', 'int64_t', 8, 'i64', 'j'),
     SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 1, 'ui8', 'i'),
-    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 2, 'i16', 'i'),
-    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'i32', 'i'),
-    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 8, 'i64', 'j'),
+    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 2, 'ui16', 'i'),
+    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'ui32', 'i'),
+    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 8, 'ui64', 'j'),
     SupportedNativeType.float: NativeType._('double', 'float', 4, 'float', 'f'),
     SupportedNativeType.double:
         NativeType._('double', 'double', 8, 'double', 'd'),
@@ -67,21 +67,32 @@ class NativeType extends Type {
     if (_nativeType == 'char') {
       return 'Char';
     }
-    switch (wasmType) {
-      case 'i':
+    switch (llvmType) {
+      case 'ui8':
+        return 'Uint8';
+      case 'ui16':
+        return 'Uint16';
+      case 'ui32':
+        return 'Uint32';
+      case 'i8':
+        return 'Int8';
+      case 'i16':
+        return 'Int16';
+      case 'i32':
         return 'Int32';
-      case 'j':
+      case 'i64':
         return 'Int64';
-      case 'f':
+      case 'float':
         return 'Float32';
-      case 'd':
+      case 'double':
         return 'Float64';
-      case 'p':
+      case '*':
         return 'Pointer';
       case 'v':
+      case 'null':
         return 'Void';
       default:
-        throw UnimplementedError(wasmType);
+        throw UnimplementedError(llvmType);
     }
   }
 

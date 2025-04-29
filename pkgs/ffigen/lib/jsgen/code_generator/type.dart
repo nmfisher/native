@@ -129,10 +129,8 @@ class UnimplementedType extends Type {
   String toString() => '(Unimplemented: $reason)';
 
   @override
-  // TODO: implement llvmType
-  String get llvmType => throw UnimplementedError();
+  String get llvmType => throw UnimplementedError(reason);
 
   @override
-  // TODO: implement sizeInBytes
-  int get sizeInBytes => throw UnimplementedError();
+  int get sizeInBytes => throw UnimplementedError(reason);
 }

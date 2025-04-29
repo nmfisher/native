@@ -158,9 +158,6 @@ abstract interface class Config {
   /// rather than a real Dart enum.
   bool unnamedEnumsShouldBeInt(Declaration declaration);
 
-  /// Config options for @Native annotations.
-  FfiNativeConfig get ffiNativeConfig;
-
   /// Where to ignore compiler warnings/errors in source header files.
   bool get ignoreSourceErrors;
 
@@ -219,7 +216,6 @@ abstract interface class Config {
     bool Function(Declaration declaration)? isLeafFunctionFunc,
     bool Function(Declaration declaration)? enumShouldBeIntFunc,
     bool Function(Declaration declaration)? unnamedEnumsShouldBeIntFunc,
-    FfiNativeConfig ffiNativeConfig = const FfiNativeConfig(enabled: false),
     bool ignoreSourceErrors = false,
     bool formatOutput = true,
     ExternalVersions externalVersions = const ExternalVersions(),
@@ -288,7 +284,6 @@ abstract interface class Config {
         enumShouldBeIntFunc: enumShouldBeIntFunc ?? (_) => false,
         unnamedEnumsShouldBeIntFunc:
             unnamedEnumsShouldBeIntFunc ?? (_) => false,
-        ffiNativeConfig: ffiNativeConfig,
         ignoreSourceErrors: ignoreSourceErrors,
         formatOutput: formatOutput,
         externalVersions: externalVersions,

@@ -412,13 +412,6 @@ class ObjCModules {
   }
 }
 
-class FfiNativeConfig {
-  final bool enabled;
-  final String? assetId;
-
-  const FfiNativeConfig({required this.enabled, this.assetId});
-}
-
 class SymbolFile {
   final Uri importPath;
   final Uri output;

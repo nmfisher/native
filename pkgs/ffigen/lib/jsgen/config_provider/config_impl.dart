@@ -164,9 +164,6 @@ class ConfigImpl implements Config {
   final bool Function(Declaration declaration) unnamedEnumsShouldBeIntFunc;
 
   @override
-  final FfiNativeConfig ffiNativeConfig;
-
-  @override
   final bool ignoreSourceErrors;
 
   @override
@@ -222,7 +219,6 @@ class ConfigImpl implements Config {
     required this.isLeafFunctionFunc,
     required this.enumShouldBeIntFunc,
     required this.unnamedEnumsShouldBeIntFunc,
-    required this.ffiNativeConfig,
     required this.ignoreSourceErrors,
     required this.formatOutput,
     required this.externalVersions,
