@@ -86,7 +86,7 @@ class FunctionType extends Type {
   
   String getExtensionMethod(Writer w, int index) {
     final s = StringBuffer();
-    final originalType = getInteropDartType(w);
+    final originalType = getDartType(w); //getInteropDartType(w);
     final targetType = originalType.replaceAll(RegExp(r"Function\(Pointer<.*"), "Function(Pointer<T>)");
     if(_written.contains(targetType)) {
       return "";
@@ -94,10 +94,10 @@ class FunctionType extends Type {
     _written.add(targetType);
     
     // print("Getting extension method for ${this.getDartType(w)} ck ${cacheKey()}");
-    s.write('''extension NativeFunctionPointer$index<T extends NativeType> on $targetType { // orignal type $originalType
+    s.write('''extension NativeFunctionPointer$index<T extends NativeType> on $targetType { // orignal type $originalType ${getInteropDartType(w)} dart type ${getDartType(w)}
 
-    Pointer<NativeFunction<T>> addFunction() {
-      return _lib.addFunction(this.toJS, '${wasmSignature}').cast();
+    Pointer<NativeFunction<$originalType>> addFunction() {
+      return Pointer<NativeFunction<$originalType>>(_lib.addFunction<$originalType>(this.toJS, '${wasmSignature}')).cast();
   }
     }
   

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:ffi';
+
 import '../code_generator.dart';
 
 import 'binding_string.dart';
@@ -74,7 +76,6 @@ class Func extends Binding {
     }
   }
 
-
   @override
   BindingString toBindingString(Writer w, {bool writeModuleBinding = false}) {
     final s = StringBuffer();
@@ -138,41 +139,41 @@ class Func extends Binding {
 
     // iterate over the arguments for the native function
     for (final param in functionType.parameters) {
-      final paramType = param.type;  
+      final paramType = param.type;
 
       // if the argument is a struct:
       // 1) inside the user-facing function, stack-allocate memory for the
       //    struct
       // 2) populate the memory with the values from the Dart class
       // 3) adjust the interop argument to accept a pointer
-          
+
       if (paramType is Struct) {
         final argPtrName = '${param.name}_structPtr';
 
         var paramConstructor =
-            'final $argPtrName = _lib._stackAlloc<${paramType.name}>(${paramType.sizeInBytes});\n';
+            'final $argPtrName = ${paramType.name}.stackAlloc();\n';
 
         int offset = 0;
         for (final paramMember in paramType.members) {
           if (paramMember.type is ConstantArray) {
             paramConstructor +=
-                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, $argPtrName + $offset);';
+                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, ${argPtrName}.addr + $offset);';
           } else {
             paramConstructor +=
-                "_lib.setValue(($argPtrName.addr + $offset) as Pointer, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+                "_lib.setValue(${argPtrName}.addr + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
           }
           offset += paramMember.type.sizeInBytes;
         }
         interopArgumentConstructors.add(paramConstructor);
-        interopArguments
-            .add(Parameter(name: argPtrName, type: PointerType(paramType)));
-        userArguments.add(Parameter(
-            type: Struct(name: 'Dart${paramType.name}'), name: param.name));
+        interopArguments.add(Parameter(
+            name: argPtrName,
+            type: PointerType(paramType)));
+        userArguments.add(
+            Parameter(type: Struct(name: paramType.name), name: param.name));
       } else if (paramType is PointerType) {
         final child = paramType.child;
-        
-        
-        // if the argument is a function pointer, the user-facing method takes 
+
+        // if the argument is a function pointer, the user-facing method takes
         // the same Pointer type as an argument
         // this means we need to give the user some way of converting Dart functions
         // to Pointer types.
@@ -185,11 +186,19 @@ class Func extends Binding {
         // native_method_with_fn_ptr(fnPtr);
         // fnPtr.dispose()
         // ```
-        if(child is NativeFunc) {
+        if (child is NativeFunc) {
           w.markNativeFunction(child.type);
         }
-      
-        interopArguments.add(param);
+
+        if(child is Struct) {
+          interopArguments.add(Parameter(
+            name: param.name,
+            originalName: param.originalName,
+            type: PointerType(child)));
+        } else {
+          interopArguments.add(param);
+        }
+        
         userArguments.add(param);
       } else {
         interopArguments.add(param);
@@ -207,7 +216,7 @@ class Func extends Binding {
 
       interopReturnType =
           NativeType(SupportedNativeType.voidType).getDartType(w);
-      userReturnType = 'Dart${originalReturnType.getInteropDartType(w)}';
+      userReturnType = originalReturnType.getInteropDartType(w);
       final structType = functionType.returnType as Struct;
       final structName = structType.name;
 
@@ -253,8 +262,7 @@ class Func extends Binding {
       //       "final $fieldName = ${wrapper}getValue(${outParam.name} + ${offset}, '${field.type.llvmType}')$jsToDart;");
       //   offset += field.type.sizeInBytes;
       // }
-      interopReturnTypeConstructors.add(
-          'return ${outParam.name}.toDart();');
+      interopReturnTypeConstructors.add('return ${outParam.name}.toDart();');
       // if the return type is a PointerAddress, we need to wrap inside a Pointer
     } else if (functionType.returnType is PointerType ||
         functionType.returnType.typealiasType is PointerType) {
@@ -275,7 +283,8 @@ class Func extends Binding {
       } else {
         userReturnType = ptrType.getDartType(w);
       }
-      interopReturnTypeConstructors.add('return result;');
+
+      interopReturnTypeConstructors.add('return ${functionType.returnType.getDartType(w)}(result);');
     } else if (functionType.returnType is EnumClass) {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
@@ -291,11 +300,11 @@ class Func extends Binding {
         .join('');
     final invokeInteropArgsString = interopArguments.map((p) {
       if (p.type.baseType is NativeFunc) {
-        return '${p.name}.cast()';
+        return '${p.name}.addr';
       }
 
       if (p.type is PointerType) {
-        return '${p.name}.addr as ${p.type.getWasmInteropType(w)}';
+        return '${p.name}.addr';// as ${p.type.getWasmInteropType(w)}';
       }
 
       if (p.type is EnumClass) {

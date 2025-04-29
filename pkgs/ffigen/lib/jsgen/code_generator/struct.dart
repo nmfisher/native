@@ -49,4 +49,5 @@ class Struct extends Compound {
     }
     return size;
   }
+
 }

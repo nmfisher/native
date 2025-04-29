@@ -107,7 +107,7 @@ abstract class Compound extends BindingType {
         isStruct ? BindingStringType.struct : BindingStringType.union;
 
     final s = StringBuffer();
-    final enclosingClassName = 'Dart$name';
+    final enclosingClassName = name;
     if (dartDoc != null) {
       s.write(makeDartDoc(dartDoc!));
     }
@@ -126,14 +126,10 @@ abstract class Compound extends BindingType {
     if (isStruct && pack != null) {
       s.write('@${w.selfImportPrefix}.Packed($pack)\n');
     }
-    final dartClassName = isStruct ? 'DartStruct' : 'Union';
+    final dartClassName = isStruct ? 'Struct' : 'Union';
     // Write class declaration.
     s.write('''
-extension type $name(Struct addr) implements Struct {
-  static Pointer<$name> stackAlloc() {
-    return _lib._stackAlloc<$name>($sizeInBytes);
-  }
-}
+
 extension ${name}Ext on Pointer<$name> {
   ${enclosingClassName} toDart() {''');
     int offset = 0;
@@ -142,9 +138,9 @@ extension ${name}Ext on Pointer<$name> {
       if (field.type is ConstantArray) {
         var arrType = field.type as ConstantArray;
         s.write(
-            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: (addr as Pointer).cast(), numElements: ${arrType.length}));\n');
+            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: addr.cast(), numElements: ${arrType.length}));\n');
       } else if (field.type is PointerType) {
-        s.write('var ${field.name} = (addr as Pointer) + $offset;\n');
+        s.write('final ${field.name} = ${field.type.getDartType(w)}((addr + $offset).cast());\n');
       } else {
         final llvmType = field.type is NativeType
             ? (field.type as NativeType).llvmType
@@ -153,12 +149,14 @@ extension ${name}Ext on Pointer<$name> {
             ? 'toDartDouble'
             : 'toDartInt';
         s.write(
-            'var ${field.name} = _lib.getValue((addr as Pointer) + $offset, "$llvmType").$toDart;\n');
+            'var ${field.name} = _lib.getValue(addr + $offset, "$llvmType").$toDart;\n');
       }
       offset += field.type.sizeInBytes;
     }
+    var constructorArgs = members.map((m) => "${m.name}${m.type is PointerType ? ".cast()" : ""}").toList();
+    constructorArgs.add("addr");
     s.write(
-        '''return ${enclosingClassName}(${members.map((m) => "${m.name}${m.type is PointerType ? ".cast()" : ""}").join(",")});
+        '''return ${enclosingClassName}(${constructorArgs.join(",")});
     }''');
 
     s.write('''void setFrom(${enclosingClassName} dartType) {''');
@@ -174,14 +172,14 @@ extension ${name}Ext on Pointer<$name> {
       }
       fieldAccessor += '.toJS';
       s.write(
-          '_lib.setValue((addr as Pointer) + $offset, $fieldAccessor, "$llvmType");\n');
+          '_lib.setValue(addr + $offset, $fieldAccessor, "$llvmType");\n');
       offset += field.type.sizeInBytes;
     }
     s.write('}\n}');
 
     s.write('final class $enclosingClassName extends ');
     s.write(
-        '${w.selfImportPrefix}.${isOpaque ? 'DartStruct' : dartClassName}{\n');
+        '${w.selfImportPrefix}.${isOpaque ? 'Struct' : dartClassName}{\n');
     const depth = '  ';
 
     // Constructor parameters
@@ -221,6 +219,8 @@ extension ${name}Ext on Pointer<$name> {
       }
     }
 
+    constructorParams.add("super._address");
+
     // Add constructor with required named parameters
     s.write('${depth} $enclosingClassName(\n');
     for (int i = 0; i < constructorParams.length; i++) {
@@ -231,6 +231,12 @@ extension ${name}Ext on Pointer<$name> {
       s.write('\n');
     }
     s.write('$depth);\n\n');
+
+    s.write('''
+static Pointer<$name> stackAlloc() {
+    return Pointer<$name>(_lib._stackAlloc<$name>($sizeInBytes));
+  }
+  ''');
 
     s.write('}\n\n');
 

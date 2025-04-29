@@ -35,9 +35,9 @@ class PointerType extends Type {
   @override
   String getInteropDartType(Writer w) {
     if (child is PointerType || child is Struct) {
-      return 'Pointer<${child.getDartType(w)}>';
+      return 'Address<${child.getDartType(w)}>';
     }
-    return 'Pointer<${child.getWasmInteropType(w)}>';
+    return 'Address<${child.getWasmInteropType(w)}>';
   }
 
   @override
