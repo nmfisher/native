@@ -9,6 +9,8 @@
 #include <emscripten/console.h>
 #include "example.h"
 
+EMSCRIPTEN_KEEPALIVE uint64_t GLOBALFO = 112;
+
 /** Adds 2 integers. */
 int EMSCRIPTEN_KEEPALIVE sum(int a, int b) {
     return a + b;
@@ -67,7 +69,9 @@ const char *EMSCRIPTEN_KEEPALIVE copy_string(const char *instr) {
 MyStruct EMSCRIPTEN_KEEPALIVE return_struct_by_value(float a, const char *b) {
     MyStruct result;
     result.a = a;
+    result.c = 2;
     char *str_copy = (char *)malloc(strlen(b) + 1);
+    emscripten_console_logf("str copy : %d", str_copy);
     strcpy(str_copy, b);
     result.b = str_copy;
     return result;
@@ -77,7 +81,12 @@ int EMSCRIPTEN_KEEPALIVE struct_as_argument(double3 vector) {
     return (int)(vector.x + vector.y + vector.z);
 }
 
+EMSCRIPTEN_KEEPALIVE void accept_struct_ptr(MyStruct *arg) {
+    emscripten_console_logf("OK");
+}
+
 void EMSCRIPTEN_KEEPALIVE accept_fn_pointer_with_no_args(void(*callback)()) {
+    void* foo = (void*)100;
     callback();
 }
 

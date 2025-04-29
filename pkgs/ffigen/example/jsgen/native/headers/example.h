@@ -1,3 +1,15 @@
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
+extern uint64_t GLOBALFO;
+extern uint64_t TSWAP_CHAIN_CONFIG_HAS_STENCIL_BUFFER;
+
 typedef void (*FunctionTypedef)(void *const owner);
 
 typedef struct { 
@@ -33,6 +45,8 @@ double *divide_precision(float *a, float *b);
 void accept_fn_typedef_arg(FunctionTypedef arg);
 FunctionTypedef return_fn_typedef();
 
+void Image_decodeRenderThread(uint8_t* data, size_t length, const char* name, void (*onComplete)(MyOpaqueStruct *));
+
 double* return_array();
 
 void *return_void_ptr();
@@ -59,9 +73,16 @@ enum MyEnum {
     ENUM_VAL2,
 };
 typedef enum MyEnum MyEnum;
-
 MyEnum return_enum();
-
 int accept_enum(MyEnum val);
 
+enum MyEnumAsInt { 
+    ENUM_AS_INT_VAL1,
+    ENUM_AS_INT_VAL2,
+};
 
+enum MyEnumAsInt return_enum_as_int();
+
+#ifdef __cplusplus
+}
+#endif
