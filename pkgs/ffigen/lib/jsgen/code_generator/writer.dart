@@ -224,27 +224,27 @@ abstract final class NativeType {
 
 }
 
-extension type const Address<T extends NativeType>(int addr) implements int {
-  Address<T> operator +(int byteOffset) =>
-      Address<T>(this.addr + byteOffset);
-  Address<U> cast<U extends NativeType>() => this as Address<U>;
+extension type const Pointer<T extends NativeType>(int addr) implements int {
+  Pointer<T> operator +(int byteOffset) =>
+      Pointer<T>(this.addr + byteOffset);
+  Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
 }
 
-base class Pointer<T extends NativeType> extends NativeType {
-  final Address<T> addr;
+base class PointerClass<T extends NativeType> extends NativeType {
+  final Pointer<T> addr;
 
-  Pointer(this.addr);
+  PointerClass(this.addr);
 
   String get llvmType => '*';
   int size() => 4;
 
-  static Pointer<Pointer<T>> stackAlloc<T extends NativeType>(int count) {
-    return _lib._stackAlloc<T>(4 * count) as Pointer<Pointer<T>>;
+  static PointerClass<PointerClass<T>> stackAlloc<T extends NativeType>(int count) {
+    return _lib._stackAlloc<T>(4 * count) as PointerClass<PointerClass<T>>;
   }
 
-  Pointer<T> operator +(int numElements) => Pointer<T>(
-      this.addr.addr + (numElements * size()) as Address<T>);
-  Pointer<U> cast<U extends NativeType>() => this as Pointer<U>;
+  PointerClass<T> operator +(int numElements) => PointerClass<T>(
+      this.addr.addr + (numElements * size()) as Pointer<T>);
+  PointerClass<U> cast<U extends NativeType>() => this as PointerClass<U>;
 }
 
 extension type Char._(NativeType value) implements NativeType {
@@ -254,39 +254,39 @@ extension type Char._(NativeType value) implements NativeType {
 }
 
 extension type const Int32._(NativeType nt) implements NativeType {
-  static Address<Int32> stackAlloc(int count) {
+  static Pointer<Int32> stackAlloc(int count) {
     return _lib._stackAlloc<Int32>(4 * count);
   }
 }
 extension type Int64(NativeType nt) implements NativeType {
-  static Address<Int64> stackAlloc(int count) {
+  static Pointer<Int64> stackAlloc(int count) {
     return _lib._stackAlloc<Int64>(8 * count);
   }
 }
 extension type Float32._(NativeType nt) implements NativeType {
-  static Address<Float32> stackAlloc(int count) {
+  static Pointer<Float32> stackAlloc(int count) {
     return _lib._stackAlloc<Float32>(4 * count);
   }
 }
 extension type Float64._(NativeType nt) implements NativeType {
-  static Address<Float64> stackAlloc(int count) {
+  static Pointer<Float64> stackAlloc(int count) {
     return _lib._stackAlloc<Float64>(8 * count);
   }
 }
 extension type NativeFunction<T>._(NativeType nt) implements NativeType {}
 extension type Void._(NativeType nt) implements NativeType {}
 
-final nullptr = Pointer<Void>(0 as Address<Void>);
+Pointer<Void> nullptr = Pointer<Void>(0);
 
-extension Int32Pointer on Pointer<Int32> {
+extension Int32PointerClass on Pointer<Int32> {
   String get llvmType => 'i32';
 
   void setValue(int value) {
-    _lib.setValue(this.addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   int getValue() {
-    return _lib.getValue(this.addr, llvmType).toDartInt;
+    return _lib.getValue(this, llvmType).toDartInt;
   }
 }
 
@@ -294,11 +294,11 @@ extension Int64Pointer on Pointer<Int64> {
   String get llvmType => 'i64';
 
   void setValue(int value) {
-    _lib.setValue(this.addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   int getValue() {
-    return _lib.getValue(this.addr, llvmType).toDartInt;
+    return _lib.getValue(this, llvmType).toDartInt;
   }
 }
 
@@ -306,17 +306,17 @@ extension Float32Pointer on Pointer<Float32> {
   String get llvmType => 'float';
 
   void setValue(double value) {
-    _lib.setValue(this.addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   double getValue() {
-    return _lib.getValue(this.addr, llvmType).toDartDouble;
+    return _lib.getValue(this, llvmType).toDartDouble;
   }
 
   Float32List asTypedList(int length) {
     final start = addr;
-    final end = addr.addr + (length * 4);
-    return Float32List.sublistView(_lib.HEAPU8.toDart, start.addr, end);
+    final end = addr + (length * 4);
+    return Float32List.sublistView(_lib.HEAPU8.toDart, start, end);
   }
 }
 
@@ -324,22 +324,22 @@ extension Float64Pointer on Pointer<Float64> {
   String get llvmType => 'double';
 
   void setValue(double value) {
-    _lib.setValue(this.addr, value.toJS, llvmType);
+    _lib.setValue(this, value.toJS, llvmType);
   }
 
   double getValue() {
-    return _lib.getValue(this.addr, llvmType).toDartDouble;
+    return _lib.getValue(this, llvmType).toDartDouble;
   }
 
   Float64List asTypedList(int length) {
     final start = addr;
-    final end = addr.addr + (length * 8);
-    return Float64List.sublistView(_lib.HEAPU8.toDart, start.addr, end);
+    final end = addr + (length * 8);
+    return Float64List.sublistView(_lib.HEAPU8.toDart, start, end);
   }
 }
 
-extension Uint8ListAddress on Uint8List {
-  Pointer<Void> get addr {
+extension Uint8ListPointer on Uint8List {
+  PointerClass<Void> get addr {
     throw UnimplementedError();
   }
 }
@@ -348,7 +348,7 @@ extension StringUtils on String {
   self.Pointer<Char> toNativeUtf8() {
     var len = _lib._lengthBytesUTF8(this) + 1;
     var ptr = Char.stackAlloc(len);
-    _lib._stringToUTF8(this, ptr.addr, len);
+    _lib._stringToUTF8(this, ptr, len);
     return ptr;
   }
 }
@@ -356,33 +356,33 @@ extension StringUtils on String {
 extension CharPtr on Pointer<Char> {
   void setValue(String value) {
     var len = _lib._lengthBytesUTF8(value);
-    _lib._stringToUTF8(value, this.addr, len);
+    _lib._stringToUTF8(value, this, len);
   }
 
-  String getValue() {
-    return _lib._UTF8ToString(this.addr);
+  String toDartString() {
+    return _lib._UTF8ToString(this);
   }
 }
 
-extension DisposePointer<T extends NativeType> on Pointer<NativeFunction<T>> {
+extension DisposePointerClass<T extends NativeType> on Pointer<NativeFunction> {
   void dispose() {
-    _lib.removeFunction(this.addr);
+    _lib.removeFunction(this);
   }
 }
 
 sealed class Struct extends NativeType {
-  final Address _address;
+  final Pointer _address;
 
   Struct(this._address);
 
 }
 
-extension StructAddress<T extends Struct> on T {
-  Address<T> get address => _address as Address<T>;
+extension StructPointer<T extends Struct> on T {
+  Pointer<T> get address => _address as Pointer<T>;
 }
 
 extension type const Array<T extends NativeType>._(
-    ({int numElements, Address<T> addr}) _) {
+    ({int numElements, Pointer<T> addr}) _) {
   Array<U> cast<U extends NativeType>() => this as Array<U>;
 
   Uint8List asUint8List() {
@@ -411,28 +411,28 @@ class NativeLibrary {
 
 extension type _NativeLibrary(JSObject _) implements JSObject {
   @JS('stackAlloc')
-  external Address<T> _stackAlloc<T extends NativeType>(int numBytes);
+  external Pointer<T> _stackAlloc<T extends NativeType>(int numBytes);
 
-  external Address<T> _malloc<T extends NativeType>(int numBytes);
-  external void _free(Address ptr);
+  external Pointer<T> _malloc<T extends NativeType>(int numBytes);
+  external void _free(Pointer ptr);
 
-  external JSNumber getValue(Address addr, String llvmType);
-  external void setValue(Address addr, JSNumber value, String llvmType);
+  external JSNumber getValue(Pointer addr, String llvmType);
+  external void setValue(Pointer addr, JSNumber value, String llvmType);
 
   @JS("lengthBytesUTF8")
   external int _lengthBytesUTF8(String str);
 
   @JS("UTF8ToString")
-  external String _UTF8ToString(Address<Char> ptr);
+  external String _UTF8ToString(Pointer<Char> ptr);
 
   @JS("stringToUTF8")
   external void _stringToUTF8(
-      String str, Address<Char> ptr, int maxBytesToWrite);
+      String str, Pointer<Char> ptr, int maxBytesToWrite);
 
-  external void writeArrayToMemory(JSUint8Array data, Address ptr);
+  external void writeArrayToMemory(JSUint8Array data, Pointer ptr);
 
-  external Address<NativeFunction<T>> addFunction<T>(JSFunction f, String signature);
-  external void removeFunction<T>(Address<NativeFunction<T>> f);
+  external Pointer<NativeFunction<T>> addFunction<T>(JSFunction f, String signature);
+  external void removeFunction<T>(Pointer<NativeFunction<T>> f);
   external JSUint8Array get HEAPU8;
 
 ''');

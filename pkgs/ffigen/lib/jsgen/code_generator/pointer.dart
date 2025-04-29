@@ -11,7 +11,7 @@ class PointerType extends Type {
   final Type child;
 
   @override
-  final int sizeInBytes = 8;
+  final int sizeInBytes = 4;
 
   @override
   final String llvmType = '*';
@@ -35,9 +35,9 @@ class PointerType extends Type {
   @override
   String getInteropDartType(Writer w) {
     if (child is PointerType || child is Struct) {
-      return 'Address<${child.getDartType(w)}>';
+      return 'Pointer<${child.getDartType(w).replaceAll("Pointer<", "PointerClass<")}>';
     }
-    return 'Address<${child.getWasmInteropType(w)}>';
+    return 'Pointer<${child.getWasmInteropType(w).replaceAll("Pointer<", "PointerClass<")}>';
   }
 
   @override
@@ -45,7 +45,7 @@ class PointerType extends Type {
     if (child == NativeType(SupportedNativeType.char)) {
       return '${w.selfImportPrefix}.Pointer<Char>';
     } else if (child is PointerType || child is Struct) {
-      return '${w.selfImportPrefix}.Pointer<${child.getDartType(w)}>';
+      return '${w.selfImportPrefix}.Pointer<${child.getDartType(w).replaceAll("Pointer<", "PointerClass<")}>';
     } else {
       return '${w.selfImportPrefix}.Pointer<${child.getWasmInteropType(w)}>';
     }

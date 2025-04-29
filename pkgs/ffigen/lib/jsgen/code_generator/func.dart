@@ -157,10 +157,10 @@ class Func extends Binding {
         for (final paramMember in paramType.members) {
           if (paramMember.type is ConstantArray) {
             paramConstructor +=
-                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, ${argPtrName}.addr + $offset);';
+                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, ${argPtrName} + $offset);';
           } else {
             paramConstructor +=
-                "_lib.setValue(${argPtrName}.addr + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
+                "_lib.setValue(${argPtrName} + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
           }
           offset += paramMember.type.sizeInBytes;
         }
@@ -263,7 +263,7 @@ class Func extends Binding {
       //   offset += field.type.sizeInBytes;
       // }
       interopReturnTypeConstructors.add('return ${outParam.name}.toDart();');
-      // if the return type is a PointerAddress, we need to wrap inside a Pointer
+      // if the return type is a PointerPointer, we need to wrap inside a Pointer
     } else if (functionType.returnType is PointerType ||
         functionType.returnType.typealiasType is PointerType) {
       var ptrType = functionType.returnType.typealiasType is PointerType
@@ -300,11 +300,11 @@ class Func extends Binding {
         .join('');
     final invokeInteropArgsString = interopArguments.map((p) {
       if (p.type.baseType is NativeFunc) {
-        return '${p.name}.addr';
+        return '${p.name}.cast()';
       }
 
       if (p.type is PointerType) {
-        return '${p.name}.addr';// as ${p.type.getWasmInteropType(w)}';
+        return '${p.name}';// as ${p.type.getWasmInteropType(w)}';
       }
 
       if (p.type is EnumClass) {
@@ -313,7 +313,7 @@ class Func extends Binding {
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {
         var pointerType = p.type.typealiasType as PointerType;
-        return '${p.name}.addr as ${pointerType.getWasmInteropType(w)}';
+        return '${p.name} as ${pointerType.getWasmInteropType(w)}';
       }
 
       return '${p.name}';

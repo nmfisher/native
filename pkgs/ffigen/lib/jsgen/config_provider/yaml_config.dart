@@ -479,7 +479,7 @@ class YamlConfig implements Config {
                 ..._renameProperties(),
                 ..._memberRenameProperties(),
                 HeterogeneousMapEntry(
-                  key: strings.symbolAddress,
+                  key: strings.symbolPointer,
                   valueConfigSpec: _includeExcludeObject(),
                   defaultValue: (node) => YamlIncluder.excludeByDefault(),
                 ),
@@ -603,7 +603,7 @@ class YamlConfig implements Config {
                 ..._includeExcludeProperties(),
                 ..._renameProperties(),
                 HeterogeneousMapEntry(
-                  key: strings.symbolAddress,
+                  key: strings.symbolPointer,
                   valueConfigSpec: _includeExcludeObject(),
                   defaultValue: (node) => YamlIncluder.excludeByDefault(),
                 )

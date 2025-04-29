@@ -89,7 +89,7 @@ const exclude = 'exclude';
 const rename = 'rename';
 const memberRename = 'member-rename';
 const memberFilter = 'member-filter';
-const symbolAddress = 'symbol-address';
+const symbolPointer = 'symbol-address';
 
 // Nested under `functions`
 const exposeFunctionTypedefs = 'expose-typedefs';

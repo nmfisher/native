@@ -138,9 +138,9 @@ extension ${name}Ext on Pointer<$name> {
       if (field.type is ConstantArray) {
         var arrType = field.type as ConstantArray;
         s.write(
-            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: addr.cast(), numElements: ${arrType.length}));\n');
+            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: Pointer<${field.type.baseArrayType.getWasmInteropType(w)}>(addr), numElements: ${arrType.length}));\n');
       } else if (field.type is PointerType) {
-        s.write('final ${field.name} = ${field.type.getDartType(w)}((addr + $offset).cast());\n');
+        s.write('final ${field.name} = ${field.type.getDartType(w)}(_lib.getValue(this + $offset, "i32").toDartInt);\n');
       } else {
         final llvmType = field.type is NativeType
             ? (field.type as NativeType).llvmType
@@ -149,12 +149,12 @@ extension ${name}Ext on Pointer<$name> {
             ? 'toDartDouble'
             : 'toDartInt';
         s.write(
-            'var ${field.name} = _lib.getValue(addr + $offset, "$llvmType").$toDart;\n');
+            'var ${field.name} = _lib.getValue(this + $offset, "$llvmType").$toDart;\n');
       }
       offset += field.type.sizeInBytes;
     }
     var constructorArgs = members.map((m) => "${m.name}${m.type is PointerType ? ".cast()" : ""}").toList();
-    constructorArgs.add("addr");
+    constructorArgs.add("this");
     s.write(
         '''return ${enclosingClassName}(${constructorArgs.join(",")});
     }''');
@@ -172,7 +172,7 @@ extension ${name}Ext on Pointer<$name> {
       }
       fieldAccessor += '.toJS';
       s.write(
-          '_lib.setValue(addr + $offset, $fieldAccessor, "$llvmType");\n');
+          '_lib.setValue(this + $offset, $fieldAccessor, "$llvmType");\n');
       offset += field.type.sizeInBytes;
     }
     s.write('}\n}');

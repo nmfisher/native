@@ -545,7 +545,7 @@ YamlDeclarationFilters declarationConfigExtractor(
 
   final includer = extractIncluderFromYaml(yamlMap);
 
-  final symbolIncluder = yamlMap[strings.symbolAddress] as YamlIncluder?;
+  final symbolIncluder = yamlMap[strings.symbolPointer] as YamlIncluder?;
 
   final rename = yamlMap[strings.rename] as Map<dynamic, String>?;
 
@@ -627,7 +627,7 @@ YamlDeclarationFilters declarationConfigExtractor(
       memberIncluderFull: memberIncluderFull,
       memberIncluderMatchers: memberIncluderMatchers,
     ),
-    symbolAddressIncluder: symbolIncluder,
+    symbolPointerIncluder: symbolIncluder,
     excludeAllByDefault: excludeAllByDefault,
   );
 }

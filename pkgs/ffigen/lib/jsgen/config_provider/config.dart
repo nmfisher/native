@@ -300,7 +300,7 @@ abstract interface class DeclarationFilters {
   bool shouldInclude(Declaration declaration);
 
   /// Checks if the symbol address should be included for this name.
-  bool shouldIncludeSymbolAddress(Declaration declaration);
+  bool shouldIncludeSymbolPointer(Declaration declaration);
 
   /// Applies renaming and returns the result.
   String rename(Declaration declaration);
@@ -316,15 +316,15 @@ abstract interface class DeclarationFilters {
 
   factory DeclarationFilters({
     bool Function(Declaration declaration)? shouldInclude,
-    bool Function(Declaration declaration)? shouldIncludeSymbolAddress,
+    bool Function(Declaration declaration)? shouldIncludeSymbolPointer,
     String Function(Declaration declaration)? rename,
     String Function(Declaration declaration, String member)? renameMember,
     bool Function(Declaration declaration, String member)? shouldIncludeMember,
   }) =>
       DeclarationFiltersImpl(
         shouldIncludeFunc: shouldInclude ?? (_) => false,
-        shouldIncludeSymbolAddressFunc:
-            shouldIncludeSymbolAddress ?? (_) => false,
+        shouldIncludeSymbolPointerFunc:
+            shouldIncludeSymbolPointer ?? (_) => false,
         renameFunc: rename ?? (declaration) => declaration.originalName,
         renameMemberFunc: renameMember ?? (_, member) => member,
         shouldIncludeMemberFunc: shouldIncludeMember ?? (_, __) => true,

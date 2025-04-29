@@ -106,7 +106,7 @@ class YamlDeclarationFilters implements DeclarationFilters {
   final YamlIncluder _includer;
   final YamlRenamer _renamer;
   final YamlMemberRenamer _memberRenamer;
-  final YamlIncluder _symbolAddressIncluder;
+  final YamlIncluder _symbolPointerIncluder;
   final YamlMemberIncluder _memberIncluder;
   final bool excludeAllByDefault;
 
@@ -114,14 +114,14 @@ class YamlDeclarationFilters implements DeclarationFilters {
     YamlIncluder? includer,
     YamlRenamer? renamer,
     YamlMemberRenamer? memberRenamer,
-    YamlIncluder? symbolAddressIncluder,
+    YamlIncluder? symbolPointerIncluder,
     YamlMemberIncluder? memberIncluder,
     required this.excludeAllByDefault,
   })  : _includer = includer ?? YamlIncluder(),
         _renamer = renamer ?? YamlRenamer(),
         _memberRenamer = memberRenamer ?? YamlMemberRenamer(),
-        _symbolAddressIncluder =
-            symbolAddressIncluder ?? YamlIncluder.excludeByDefault(),
+        _symbolPointerIncluder =
+            symbolPointerIncluder ?? YamlIncluder.excludeByDefault(),
         _memberIncluder = memberIncluder ?? YamlMemberIncluder();
 
   /// Applies renaming and returns the result.
@@ -141,8 +141,8 @@ class YamlDeclarationFilters implements DeclarationFilters {
 
   /// Checks if the symbol address should be included for this name.
   @override
-  bool shouldIncludeSymbolAddress(Declaration declaration) =>
-      _symbolAddressIncluder.shouldInclude(declaration.originalName);
+  bool shouldIncludeSymbolPointer(Declaration declaration) =>
+      _symbolPointerIncluder.shouldInclude(declaration.originalName);
 
   /// Checks if a member is allowed by a filter.
   @override

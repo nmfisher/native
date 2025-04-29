@@ -245,9 +245,9 @@ class DeclarationFiltersImpl implements DeclarationFilters {
   final bool Function(Declaration declaration) shouldIncludeFunc;
 
   @override
-  bool shouldIncludeSymbolAddress(Declaration declaration) =>
-      shouldIncludeSymbolAddressFunc(declaration);
-  final bool Function(Declaration declaration) shouldIncludeSymbolAddressFunc;
+  bool shouldIncludeSymbolPointer(Declaration declaration) =>
+      shouldIncludeSymbolPointerFunc(declaration);
+  final bool Function(Declaration declaration) shouldIncludeSymbolPointerFunc;
 
   @override
   bool shouldIncludeMember(Declaration declaration, String member) =>
@@ -259,7 +259,7 @@ class DeclarationFiltersImpl implements DeclarationFilters {
     required this.renameFunc,
     required this.renameMemberFunc,
     required this.shouldIncludeFunc,
-    required this.shouldIncludeSymbolAddressFunc,
+    required this.shouldIncludeSymbolPointerFunc,
     required this.shouldIncludeMemberFunc,
   });
 }
