@@ -7,9 +7,35 @@
 #include <stdio.h>
 #include <emscripten.h>
 #include <emscripten/console.h>
+#include <emscripten/val.h>
+#include <emscripten/bind.h>
 #include "example.h"
 
-EMSCRIPTEN_KEEPALIVE uint64_t GLOBALFO = 112;
+extern "C" {
+EMSCRIPTEN_KEEPALIVE uint64_t GLOBALINT = 112;
+
+void EMSCRIPTEN_KEEPALIVE check_buffer(uint8_t *addr) {
+    for(int i = 0; i < 10; i++) {
+        emscripten_console_logf("%d %d", i, addr[i]);
+    }
+}
+
+emscripten::val emscripten_make_buffer(int ptr, int length) {
+    // char* buffer =(char*)malloc(length);
+    char *buffer = (char*)ptr;
+    for(int i = 0; i < length; i++) {
+        buffer[i] = i;
+    }
+
+    check_buffer((uint8_t*)ptr);
+    auto v = emscripten::val(emscripten::typed_memory_view(length, buffer));
+    return v;
+}
+
+EMSCRIPTEN_BINDINGS(module) {
+    emscripten::function("_emscripten_make_buffer", &emscripten_make_buffer, emscripten::allow_raw_pointers());
+}
+
 
 /** Adds 2 integers. */
 int EMSCRIPTEN_KEEPALIVE sum(int a, int b) {
@@ -61,7 +87,7 @@ double *EMSCRIPTEN_KEEPALIVE divide_precision(float *a, float *b) {
 }
 
 const char *EMSCRIPTEN_KEEPALIVE copy_string(const char *instr) {
-    const char * outstr = (char*)malloc(strlen(instr) + 1);
+    char * outstr = (char*)malloc(strlen(instr) + 1);
     strcpy(outstr, instr);
     return outstr;
 }
@@ -118,3 +144,4 @@ int EMSCRIPTEN_KEEPALIVE acceptEnum(MyEnum val) {
 }
 
 
+}

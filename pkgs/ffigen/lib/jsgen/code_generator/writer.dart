@@ -196,7 +196,6 @@ class Writer {
       // Write wrapper classs.
 
       s.write('''
-import '' as self;
 import 'dart:typed_data';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
@@ -401,54 +400,6 @@ extension Float64Pointer on Pointer<Float64> {
   }
 }
 
-extension Uint8ListPointer on Uint8List {
-  Pointer<Uint8> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension Int16ListPointer on Int16List {
-  Pointer<Int16> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension UInt16ListPointer on Uint16List {
-  Pointer<Uint16> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension UInt32ListPointer on Uint32List {
-  Pointer<Uint32> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension Int32ListPointer on Int32List {
-  Pointer<Int32> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension Int64ListPointer on Int64List {
-  Pointer<Int64> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension Float32ListPointer on Float32List {
-  Pointer<Float32> get address {
-    throw UnimplementedError();
-  }
-}
-
-extension Float64ListPointer on Float64List {
-  Pointer<Float64> get address {
-    throw UnimplementedError();
-  }
-}
-
 extension StringUtils on String {
   self.Pointer<Char> toNativeUtf8() {
     var len = _lib._lengthBytesUTF8(this) + 1;
@@ -510,15 +461,24 @@ extension type const Array<T extends NativeType>._(
   }
 }
 
-late _NativeLibrary _lib;
+late NativeLibrary _lib;
 
-class NativeLibrary {
+Pointer<T> malloc<T extends NativeType>(int numBytes) {
+  return _lib._malloc<T>(numBytes);
+}
+
+void free(Pointer ptr) {
+  _lib._free(ptr);
+}
+
+extension type NativeLibrary(JSObject _) implements JSObject {
+
+  static NativeLibrary get instance => _lib;
+  
   static void initBindings(String moduleName) {
     _lib = globalContext.getProperty(moduleName.toJS);
   }
-}
 
-extension type _NativeLibrary(JSObject _) implements JSObject {
   @JS('stackAlloc')
   external Pointer<T> _stackAlloc<T extends NativeType>(int numBytes);
 
