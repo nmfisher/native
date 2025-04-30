@@ -6,3 +6,7 @@ output: 'lib/generated_bindings.dart'
 headers:
   entry-points:
     - 'native/headers/example.h'
+enums:
+  as-int:
+    include:
+      - MyEnumAsInt
