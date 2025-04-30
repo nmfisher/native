@@ -7,8 +7,7 @@ extern "C"
 #endif
 
 
-extern uint64_t GLOBALFO;
-extern uint64_t TSWAP_CHAIN_CONFIG_HAS_STENCIL_BUFFER;
+extern uint64_t GLOBALINT;
 
 typedef void (*FunctionTypedef)(void *const owner);
 
