@@ -331,6 +331,11 @@ extension fncp<T extends NativeType> on void Function(Pointer<T>) {
   }
 }
 
+extension VoidPointerClass on Pointer<Void> {
+  String get llvmType => 'v';
+
+  static Pointer<Void> fromAddress(int addr) => Pointer<Void>(addr);
+}
 
 extension Int32PointerClass on Pointer<Int32> {
   String get llvmType => 'i32';
@@ -342,6 +347,8 @@ extension Int32PointerClass on Pointer<Int32> {
   int getValue() {
     return _lib.getValue(this, llvmType).toDartInt;
   }
+
+  static Pointer<Int32> fromAddress(int addr) => Pointer<Int32>(addr);
 }
 
 extension Int64Pointer on Pointer<Int64> {
@@ -354,6 +361,8 @@ extension Int64Pointer on Pointer<Int64> {
   int getValue() {
     return _lib.getValue(this, llvmType).toDartInt;
   }
+
+  static Pointer<Int64> fromAddress(int addr) => Pointer<Int64>(addr);
 }
 
 extension Float32Pointer on Pointer<Float32> {
@@ -374,12 +383,14 @@ extension Float32Pointer on Pointer<Float32> {
   }
 
   double operator [](int i) {
-    return _lib.getValue(this + (i*4), 'f').toDartDouble;
+    return _lib.getValue(this + (i * 4), 'f').toDartDouble;
   }
 
   operator []=(int i, double val) {
-    _lib.setValue(this + (i*4), val.toJS, 'f');
+    _lib.setValue(this + (i * 4), val.toJS, 'f');
   }
+
+  static Pointer<Float32> fromAddress(int addr) => Pointer<Float32>(addr);
 }
 
 extension Float64Pointer on Pointer<Float64> {
@@ -398,6 +409,8 @@ extension Float64Pointer on Pointer<Float64> {
     final end = addr + (length * 8);
     return Float64List.sublistView(_lib.HEAPU8.toDart, start, end);
   }
+
+  static Pointer<Float64> fromAddress(int addr) => Pointer<Float64>(addr);
 }
 
 extension StringUtils on String {
@@ -418,6 +431,8 @@ extension CharPtr on Pointer<Char> {
   String toDartString() {
     return _lib._UTF8ToString(this);
   }
+
+  static Pointer<Char> fromAddress(int addr) => Pointer<Char>(addr);
 }
 
 extension DisposePointerClass<T extends NativeType> on Pointer<NativeFunction> {
