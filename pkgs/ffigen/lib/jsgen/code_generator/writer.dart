@@ -420,7 +420,7 @@ extension Float64Pointer on Pointer<Float64> {
 }
 
 extension StringUtils on String {
-  self.Pointer<Char> toNativeUtf8() {
+  Pointer<Char> toNativeUtf8() {
     var len = _lib._lengthBytesUTF8(this) + 1;
     var ptr = Char.stackAlloc(len);
     _lib._stringToUTF8(this, ptr, len);

@@ -287,9 +287,7 @@ class Func extends Binding {
       }
 
       if(p.type.llvmType == "i64") {
-      //   if(p.type.getNativeType().startsWith("uint")) {
           return '${p.name}.toJSBigInt';
-      //   }
       }
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {

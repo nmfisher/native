@@ -222,7 +222,9 @@ class ConfigImpl implements Config {
     required this.ignoreSourceErrors,
     required this.formatOutput,
     required this.externalVersions,
-  });
+  }) {
+    
+  }
 }
 
 class DeclarationFiltersImpl implements DeclarationFilters {

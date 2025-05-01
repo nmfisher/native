@@ -20,6 +20,7 @@ import 'utils.dart';
 
 /// Main entrypoint for header_parser.
 Library parse(Config c) {
+
   initParser(c);
 
   final bindings = parseToBindings(c);
@@ -76,6 +77,7 @@ List<Binding> parseToBindings(Config c) {
 
   _logger.fine('CompilerOpts used: $compilerOpts');
   clangCmdArgs = createDynamicStringArray(compilerOpts);
+  
   final cmdLen = compilerOpts.length;
 
   // Contains all bindings. A set ensures we never have duplicates.

@@ -71,36 +71,41 @@ class NativeType extends Type {
 
   @override
   String getWasmInteropType(Writer w) {
-    if (_nativeType == 'char') {
-      return 'Char';
-    }
-    switch (llvmType) {
-      case 'ui8':
-        return 'Uint8';
-      case 'ui16':
-        return 'Uint16';
-      case 'ui32':
-        return 'Uint32';
-      case 'i8':
-        return 'Int8';
-      case 'i16':
-        return 'Int16';
-      case 'i32':
-        return 'Int32';
-      case 'i64':
-        return 'Int64';
-      case 'float':
-        return 'Float32';
-      case 'double':
-        return 'Float64';
-      case '*':
-        return 'Pointer';
-      case 'v':
-      case 'null':
-        return 'Void';
-      default:
-        throw UnimplementedError(llvmType);
-    }
+
+    switch(_nativeType) {
+        case 'char':
+          return 'Char';
+        case 'uint8_t':
+          return 'Uint8';
+        case 'int8_t':
+          return 'Int8';
+        case 'unsigned short':
+        case 'uint16_t':
+          return 'Uint16';
+        case 'uint32_t':
+          return 'Uint32';
+        case 'short':
+        case 'i16':
+          return 'Int16';
+        case 'int':
+        case 'int32_t':
+        case 'long':
+          return 'Int32';
+        case 'int64_t':
+          return 'Int64';
+        case 'float':
+          return 'Float32';
+        case 'double':
+          return 'Float64';
+        case 'intptr_t':
+        case 'uintptr_t':
+          return 'Pointer';
+        case 'void':
+        case 'null':
+          return 'Void';
+        default:
+          throw UnimplementedError(_nativeType);
+      }
   }
 
   @override

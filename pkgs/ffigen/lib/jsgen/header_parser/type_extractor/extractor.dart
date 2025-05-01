@@ -120,10 +120,12 @@ Type getCodeGenType(
       return NativeType(SupportedNativeType.voidType);
     case clang_types.CXTypeKind.CXType_UInt:
     case clang_types.CXTypeKind.CXType_Int:
-      return NativeType(SupportedNativeType.int32);
     case clang_types.CXTypeKind.CXType_ULong:
     case clang_types.CXTypeKind.CXType_Long:
-      return NativeType(SupportedNativeType.int64);
+      return NativeType(SupportedNativeType.int32); // important - emscripten defines long as int32_t
+    case clang_types.CXTypeKind.CXType_LongLong:
+    case clang_types.CXTypeKind.CXType_ULongLong:
+      return NativeType(SupportedNativeType.int64); 
     case clang_types.CXTypeKind.CXType_Float:
       return NativeType(SupportedNativeType.float);
     case clang_types.CXTypeKind.CXType_Double:

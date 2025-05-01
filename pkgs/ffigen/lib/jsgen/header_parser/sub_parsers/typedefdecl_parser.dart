@@ -73,6 +73,14 @@ Typealias? parseTypedefDeclaration(
       _logger.fine("Skipped Typedef '$typedefName': typedef to bool.");
       bindingsIndex.addUnsupportedTypealiasToSeen(typedefUsr);
     } else {
+      
+      // if(typedefUsr.endsWith("size_t")) {
+      //   print("##########");
+      //   print(cursor.sourceFileName() + cursor.sourceFileOffset().toString());
+      //   print(typedefUsr + s.getNativeType());
+      //   print("##########");
+      // }
+      
       // Create typealias.
       return Typealias(
         usr: typedefUsr,
