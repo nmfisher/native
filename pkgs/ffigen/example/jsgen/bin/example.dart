@@ -47,6 +47,9 @@ void main(List<String> args) async {
   final bigIntFnResult = bigint_method(BigInt.parse("9223372036854775808"));
   assert(bigIntFnResult == BigInt.parse("9223372036854775809"), bigIntFnResult.toString());
 
+  final sizeTresult = size_tmethod(12345);
+  assert(sizeTresult == 12346, sizeTresult);
+
   var done = false;
   void Function() callback = () {
     done = true;

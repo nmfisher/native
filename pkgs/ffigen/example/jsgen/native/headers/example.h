@@ -1,8 +1,3 @@
-#ifndef _SIZE_T
-#define _SIZE_T
-typedef int size_t;
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -48,7 +43,8 @@ double *divide_precision(float *a, float *b);
 void accept_fn_typedef_arg(FunctionTypedef arg);
 FunctionTypedef return_fn_typedef();
 
-void Image_decodeRenderThread(uint8_t* data, size_t length, const char* name, void (*onComplete)(MyOpaqueStruct *));
+void uint8_tptr_(uint8_t* data);
+void int8_tptr_method(int8_t* data);
 
 double* return_array();
 
