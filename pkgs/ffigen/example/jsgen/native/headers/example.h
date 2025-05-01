@@ -1,3 +1,8 @@
+#ifndef _SIZE_T
+#define _SIZE_T
+typedef int size_t;
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -5,7 +10,6 @@
 extern "C"
 {
 #endif
-
 
 extern uint64_t GLOBALINT;
 
@@ -83,6 +87,7 @@ enum MyEnumAsInt {
 enum MyEnumAsInt return_enum_as_int();
 
 uint64_t bigint_method(uint64_t number);
+size_t size_tmethod(size_t number);
 
 #ifdef __cplusplus
 }

@@ -1,14 +1,12 @@
-// Copyright (c) 2020, the Dart project authors. Please see the AUTHORS file
-// for details. All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <emscripten.h>
 #include <emscripten/console.h>
 #include <emscripten/val.h>
 #include <emscripten/bind.h>
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "example.h"
 
 extern "C" {
@@ -145,6 +143,11 @@ int EMSCRIPTEN_KEEPALIVE acceptEnum(MyEnum val) {
 
 EMSCRIPTEN_KEEPALIVE uint64_t bigint_method(uint64_t number) {
     emscripten_console_logf("Number is %l", number);
+    return number + 1;
+}
+
+EMSCRIPTEN_KEEPALIVE size_t size_tmethod(size_t number) {
+    emscripten_console_logf("size_t number is %d", number);
     return number + 1;
 }
 
