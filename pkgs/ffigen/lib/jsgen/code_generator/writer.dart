@@ -274,19 +274,25 @@ extension type const Uint32._(NativeType nt) implements NativeType {
 
 extension type const Uint8._(NativeType nt) implements NativeType {
   static Pointer<Uint8> stackAlloc(int count) {
-    return _lib._stackAlloc<Uint8>(4 * count);
+    return _lib._stackAlloc<Uint8>(count);
+  }
+}
+
+extension type const Int8._(NativeType nt) implements NativeType {
+  static Pointer<Int8> stackAlloc(int count) {
+    return _lib._stackAlloc<Int8>(count);
   }
 }
 
 extension type const Uint16._(NativeType nt) implements NativeType {
   static Pointer<Uint16> stackAlloc(int count) {
-    return _lib._stackAlloc<Uint16>(4 * count);
+    return _lib._stackAlloc<Uint16>(2 * count);
   }
 }
 
 extension type const Int16._(NativeType nt) implements NativeType {
   static Pointer<Int16> stackAlloc(int count) {
-    return _lib._stackAlloc<Int16>(4 * count);
+    return _lib._stackAlloc<Int16>(2 * count);
   }
 }
 
@@ -319,14 +325,14 @@ Pointer<Never> nullptr = Pointer<Never>(0);
 extension PointerPointerClass<T extends NativeType>
     on Pointer<PointerClass<T>> {
   operator [](int i) => this + i;
-  operator []=(int i, Pointer<T> value) {
-    throw Exception();
+  void operator []=(int i, Pointer<T> value) {
+    _lib.setValue(this + (i * 4), value.addr.toJS, 'i64');
   }
 }
 
 extension fncp<T extends NativeType> on void Function(Pointer<T>) {
   Pointer<NativeFunction<void Function(Pointer<T>)>> addFunction() {
-    var fnPtr = _lib.addFunction<void Function(Pointer<T>)>(this.toJS, "v");
+    var fnPtr = _lib.addFunction<void Function(Pointer<T>)>(this.toJS, "vp");
     return fnPtr;
   }
 }
@@ -486,6 +492,31 @@ void free(Pointer ptr) {
   _lib._free(ptr);
 }
 
+@JS('BigInt')
+external JSBigInt bigInt(String s);
+
+@JS('BigInt.asUintN')
+external JSBigInt bigIntasUintN(int numBits, JSBigInt bi);
+
+extension JSBigIntExtension on JSBigInt {
+  
+  BigInt get toDart {
+    return BigInt.parse(this.toString());
+  }
+}
+
+extension BigIntExtension on int {
+  JSBigInt get toJSBigInt {
+    return bigInt(this.toString());
+  }
+}
+
+extension DartBigIntExtension on BigInt {
+  JSBigInt get toJSBigInt {
+    return bigInt(this.toString());
+  }
+}
+
 extension type NativeLibrary(JSObject _) implements JSObject {
 
   static NativeLibrary get instance => _lib;
@@ -500,6 +531,8 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external Pointer<T> _malloc<T extends NativeType>(int numBytes);
   external void _free(Pointer ptr);
 
+  @JS('getValue')
+  external JSBigInt getValueBigInt(Pointer addr, String llvmType);
   external JSNumber getValue(Pointer addr, String llvmType);
   external void setValue(Pointer addr, JSNumber value, String llvmType);
 

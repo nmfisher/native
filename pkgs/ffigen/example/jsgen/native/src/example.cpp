@@ -12,7 +12,7 @@
 #include "example.h"
 
 extern "C" {
-EMSCRIPTEN_KEEPALIVE uint64_t GLOBALINT = 112;
+EMSCRIPTEN_KEEPALIVE uint64_t GLOBALINT = 9223372036854775808;
 
 void EMSCRIPTEN_KEEPALIVE check_buffer(uint8_t *addr) {
     for(int i = 0; i < 10; i++) {
@@ -141,6 +141,11 @@ int EMSCRIPTEN_KEEPALIVE acceptEnum(MyEnum val) {
         case ENUM_VAL2:
             return 1;
     }
+}
+
+EMSCRIPTEN_KEEPALIVE uint64_t bigint_method(uint64_t number) {
+    emscripten_console_logf("Number is %l", number);
+    return number + 1;
 }
 
 

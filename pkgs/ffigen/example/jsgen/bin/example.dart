@@ -5,11 +5,11 @@ import 'dart:typed_data';
 import '../lib/generated_bindings.dart';
 
 
-void main(List<String> args) {
+void main(List<String> args) async {
   print("Running WASM example");
 
   NativeLibrary.initBindings("module");
-
+  
   final intPointer = Int32.stackAlloc(1);
   intPointer.setValue(11);
   assert(intPointer.getValue() == 11);
@@ -22,22 +22,31 @@ void main(List<String> args) {
   assert(subtract(intPointer, 2) == 9);
   assert((divide(10, 2).getValue() - 5.0).abs() < 0.0001);
   assert(divide_precision(floatPointer, floatPointer).getValue() == 1.0);
-  var copy = copy_string('MY STRING'.toNativePointer());
-  assert(copy.getValue() == 'MY STRING', copy.getValue());
+  var copy = copy_string('MY STRING'.toNativeUtf8());
+  assert(copy.toDartString() == 'MY STRING', copy.toDartString());
 
   var myStruct = return_struct_by_value(10.0, copy);
 
   assert(myStruct.a == 10.0, myStruct.a);
-  assert(myStruct.b.getValue() == 'MY STRING', myStruct.b.getValue());
+  assert(myStruct.c == 2, myStruct.c);
+  assert(myStruct.b.toDartString() == 'MY STRING', myStruct.b.toDartString());
 
   var ptr = MyStruct.stackAlloc();
-  ptr.setFrom(DartMyStruct(20.0, Pointer<Char>(0), 8));
+  ptr.setFrom(MyStruct(20.0, Pointer<Char>(0 as Pointer<Char>), 8, ptr));
   assert(ptr.toDart().a == 20.0, ptr.toDart().a);
 
-  var structArg = Dartdouble3(1.0, 2.0, 3.0);
+  var structArg = double3(1.0, 2.0, 3.0, ptr);
   assert(
       struct_as_argument(structArg) == 6, struct_as_argument(structArg));
+  
+  accept_struct_ptr(Pointer<Never>(0));
+  
   print("structArgument done");
+  assert(GLOBALINT.toString() == "9223372036854775808", GLOBALINT.toString());
+  
+  final bigIntFnResult = bigint_method(BigInt.parse("9223372036854775808"));
+  assert(bigIntFnResult == BigInt.parse("9223372036854775809"), bigIntFnResult.toString());
+
   var done = false;
   void Function() callback = () {
     done = true;
@@ -45,7 +54,7 @@ void main(List<String> args) {
 
   
   final fnPtr = callback.addFunction();
-  accept_fn_pointer_with_no_args(fnPtr.cast());
+  accept_fn_pointer_with_no_args(fnPtr);
   assert(done);
   
   done = false;
@@ -66,9 +75,10 @@ void main(List<String> args) {
 
   done = false;
 
-  final fnPtr3 =  (Pointer ptr) {
+  final fnPtr3 =  (Pointer<MyStruct> ptr) {
     done = true;
   }.addFunction();
+
   
   accept_fn_pointer_with_ptr_args(fnPtr3);
   done = false;

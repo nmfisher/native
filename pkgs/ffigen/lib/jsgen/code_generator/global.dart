@@ -57,10 +57,24 @@ class Global extends Binding {
       } else {
         final isIntType = type.getDartType(w) == "int";
         final isDoubleType = type.getDartType(w) == "double";
+        final isBigInt = type.llvmType == "i64";
         
-        s.write('''$ffiDartType get ${pointerName.replaceFirst('_', "")} {
-            return _lib.getValue(_lib.$pointerName, "${type.llvmType}")${isIntType ? ".toDartInt" : isDoubleType ? "toDartDouble" : ""};
-        }''');
+        s.write('''$dartType get ${pointerName.replaceFirst('_', "")} {
+            final value = _lib.getValue${isBigInt ? "BigInt" : ""}(_lib.$pointerName, "${type.llvmType}");''');
+        if(isBigInt) {
+          if(type.getNativeType() == "uint64_t") {
+            s.write('return bigIntasUintN(64, value).toDart;');
+          } else {
+            s.write('return value.toDart;');
+          }
+        } else if(isIntType) {
+          s.write('return value.toDartInt;');
+        } else if(isDoubleType) {
+          s.write('return value.toDartDouble;');
+        } else {
+          throw Exception();
+        }
+        s.write('}');
       }    
 
     return BindingString(type: BindingStringType.global, string: s.toString());

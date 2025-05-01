@@ -226,42 +226,7 @@ class Func extends Binding {
           .add('final ${outParam.name} = ${structType.name}.stackAlloc();');
 
       interopArguments.insert(0, outParam);
-
-      // var outFieldNames = <String>[];
-
-      // var offset = 0;
-
-      // for (final field in structType.members) {
-      //   if (field.type is! NativeType && field.type is! PointerType) {
-      //     throw Exception('Unsupported : ${field.type}');
-      //   }
-
-      //   late String jsToDart;
-      //   String wrapper = '';
-      //   final dartType = field.type.getDartType(w);
-
-      //   if (field.type is ConstantArray) {
-      //     var arrayType = field.type as ConstantArray;
-      //     wrapper = '${arrayType.getDartType(w)}(${arrayType.length}, ';
-      //     jsToDart = '.toDartInt as Pointer)';
-      //   } else if (dartType == 'double') {
-      //     jsToDart = '.toDartDouble';
-      //   } else if (dartType == 'int') {
-      //     jsToDart = '.toDartInt';
-      //   } else if (field.type is PointerType) {
-      //     final ptrType = field.type as PointerType;
-      //     final inner = ptrType.child.getWasmInteropType(w);
-      //     wrapper = 'Pointer(';
-      //     jsToDart = '.toDartInt as Pointer<$inner>)';
-      //   }
-
-      //   var fieldName = '${structName}_${field.name}';
-      //   outFieldNames.add(fieldName);
-
-      //   interopReturnTypeConstructors.add(
-      //       "final $fieldName = ${wrapper}getValue(${outParam.name} + ${offset}, '${field.type.llvmType}')$jsToDart;");
-      //   offset += field.type.sizeInBytes;
-      // }
+          
       interopReturnTypeConstructors.add('return ${outParam.name}.toDart();');
       // if the return type is a PointerPointer, we need to wrap inside a Pointer
     } else if (functionType.returnType is PointerType ||
@@ -288,6 +253,12 @@ class Func extends Binding {
     } else if (functionType.returnType is EnumClass && !(functionType.returnType as EnumClass).generateAsInt) {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
+    } else if(functionType.returnType is NativeType && functionType.returnType.llvmType == "i64") {
+      if(functionType.returnType.getNativeType() == "uint64_t") {
+        interopReturnTypeConstructors.add('return bigIntasUintN(64,result).toDart;');
+      } else {
+        interopReturnTypeConstructors.add('return result.toDart;');
+      }
     } else {
       interopReturnTypeConstructors.add('return result;');
     }
@@ -313,6 +284,12 @@ class Func extends Binding {
         } else {
           return '${p.name}.value';
         }
+      }
+
+      if(p.type.llvmType == "i64") {
+      //   if(p.type.getNativeType().startsWith("uint")) {
+          return '${p.name}.toJSBigInt';
+      //   }
       }
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {

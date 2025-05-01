@@ -82,6 +82,9 @@ enum MyEnumAsInt {
 
 enum MyEnumAsInt return_enum_as_int();
 
+uint64_t bigint_method(uint64_t number);
+
 #ifdef __cplusplus
 }
 #endif
+

@@ -31,11 +31,11 @@ class NativeType extends Type {
     SupportedNativeType.int8: NativeType._('int', 'int8_t', 1, 'i8', 'i'),
     SupportedNativeType.int16: NativeType._('int', 'int16_t', 2, 'i16', 'i'),
     SupportedNativeType.int32: NativeType._('int', 'int32_t', 4, 'i32', 'i'),
-    SupportedNativeType.int64: NativeType._('int', 'int64_t', 8, 'i64', 'j'),
-    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 1, 'ui8', 'i'),
-    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 2, 'ui16', 'i'),
-    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'ui32', 'i'),
-    SupportedNativeType.uint64: NativeType._('int', 'uint64_t', 8, 'ui64', 'j'),
+    SupportedNativeType.int64: NativeType._('BigInt', 'int64_t', 8, 'i64', 'j'),
+    SupportedNativeType.uint8: NativeType._('int', 'uint8_t', 1, 'i8', 'i'),
+    SupportedNativeType.uint16: NativeType._('int', 'uint16_t', 2, 'i16', 'i'),
+    SupportedNativeType.uint32: NativeType._('int', 'uint32_t', 4, 'i32', 'i'),
+    SupportedNativeType.uint64: NativeType._('BigInt', 'uint64_t', 8, 'i64', 'j'),
     SupportedNativeType.float: NativeType._('double', 'float', 4, 'float', 'f'),
     SupportedNativeType.double:
         NativeType._('double', 'double', 8, 'double', 'd'),
@@ -59,8 +59,15 @@ class NativeType extends Type {
 
   factory NativeType(SupportedNativeType type) => _primitives[type]!;
 
+  String getDartType(Writer w) => _dartType;
+
   @override
-  String getInteropDartType(Writer w) => _dartType;
+  String getInteropDartType(Writer w) {
+    if(llvmType == 'i64') {
+      return "JSBigInt";
+    }
+    return _dartType;
+  }
 
   @override
   String getWasmInteropType(Writer w) {
@@ -97,7 +104,7 @@ class NativeType extends Type {
   }
 
   @override
-  String getNativeType({String varName = ''}) => '$_nativeType $varName';
+  String getNativeType({String varName = ''}) => _nativeType;
 
   @override
   String cacheKey() => _dartType;
