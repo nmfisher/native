@@ -10,6 +10,14 @@ void main(List<String> args) async {
 
   NativeLibrary.initBindings("module");
   
+  var structWithArray = return_struct_with_array_by_value();
+
+  assert(structWithArray.array1[0] == 10.0, structWithArray.array1[0]);
+  assert(structWithArray.array1[1] == 20.0, structWithArray.array1[1]);
+  assert(structWithArray.array2[0] == 30.0, structWithArray.array2[0]);
+  assert(structWithArray.array2[1] == 40.0, structWithArray.array2[1]);
+  assert(structWithArray.array2[2] == 50.0, structWithArray.array2[2]);
+  
   final intPointer = Int32.stackAlloc(1);
   intPointer.setValue(11);
   assert(intPointer.getValue() == 11);
@@ -92,54 +100,3 @@ void main(List<String> args) async {
 
   print("Function argument completed");
 }
-
-//   final ptrArray = module.stackAlloc<Int32>(2);
-//   ptrArray.setValue(2);
-//   (ptrArray + 1).setValue(3);
-//   assert(ptrArray.getValue() == 2);
-//   assert((ptrArray + 1).getValue() == 3, (ptrArray + 1).getValue());
-
-//   var arrayPtr = module.return_array();
-//   for (int i = 0; i < 4; i++) {
-//     final val = (arrayPtr + i).getValue();
-//     assert(val == (i + 1).toDouble());
-//   }
-//   var array = Array<Double>(4, arrayPtr.addr, module);
-
-//   var len = array.asUint8List().length;
-//   var arrayDoubleData = array
-//       .asUint8List()
-//       .buffer
-//       .asFloat64List(array.asUint8List().offsetInBytes, array.numElements);
-//   assert(arrayDoubleData[0] == 1.0, arrayDoubleData[0]);
-//   assert(arrayDoubleData[1] == 2.0, arrayDoubleData[1]);
-//   assert(arrayDoubleData[2] == 3.0, arrayDoubleData[2]);
-//   assert(arrayDoubleData[3] == 4.0, arrayDoubleData[3]);
-
-//   array.setValue(
-//       Float64List.fromList([10.0, 11.0, 12.0, 13.0]).buffer.asUint8List());
-//   for (int i = 0; i < 4; i++) {
-//     final val = (arrayPtr + i).getValue();
-//     assert(val == (i + 10).toDouble());
-//   }
-//   final ptrA = module.stackAlloc<Int32>(1);
-//   ptrA.setValue(10);
-//   final ptrptrA = module.stackAlloc<Pointer<Int32>>(1);
-//   ptrptrA.setValue(ptrA);
-//   assert(ptrptrA.getValue().getValue() == 10);
-//   final ptrB = module.stackAlloc<Int32>(1);
-//   ptrB.setValue(20);
-//   final ptrptrB = module.stackAlloc<Pointer<Int32>>(1);
-//   ptrptrB.setValue(ptrB);
-//   var ptrptrResult = module.ptr_ptr(ptrptrA, ptrptrB);
-
-//   print(
-//       'addr 0 ${ptrptrResult.getValue().addr} addr 1 ${(ptrptrResult + 1).getValue().addr}');
-
-//   final val1 = ptrptrResult.getValue().getValue();
-//   assert(val1 == 20, val1);
-//   final val2 = (ptrptrResult + 1).getValue().getValue();
-//   assert(val2 == 10, val2);
-
-//   print('Example completed');
-// }

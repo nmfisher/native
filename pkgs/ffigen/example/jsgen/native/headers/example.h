@@ -26,7 +26,8 @@ typedef struct MyStruct MyStruct;
 typedef struct MyOpaqueStruct MyOpaqueStruct;
 
 struct StructWithArray {
-    double foo[4];
+    double array1[2];
+    double array2[3];
 };
 typedef struct StructWithArray StructWithArray;
 

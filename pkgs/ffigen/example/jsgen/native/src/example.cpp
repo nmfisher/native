@@ -1,4 +1,5 @@
 #include <emscripten.h>
+#include <emscripten/stack.h>
 #include <emscripten/console.h>
 #include <emscripten/val.h>
 #include <emscripten/bind.h>
@@ -101,6 +102,16 @@ MyStruct EMSCRIPTEN_KEEPALIVE return_struct_by_value(float a, const char *b) {
     return result;
 }
 
+StructWithArray EMSCRIPTEN_KEEPALIVE return_struct_with_array_by_value() {
+    StructWithArray result;
+    result.array1[0] = 10.0;
+    result.array1[1] = 20.0;
+    result.array2[0] = 30.0;
+    result.array2[1] = 40.0;
+    result.array2[2] = 50.0;
+    return result;
+}
+
 int EMSCRIPTEN_KEEPALIVE struct_as_argument(double3 vector) {
     return (int)(vector.x + vector.y + vector.z);
 }
@@ -151,5 +162,8 @@ EMSCRIPTEN_KEEPALIVE size_t size_tmethod(size_t number) {
     return number + 1;
 }
 
+EMSCRIPTEN_KEEPALIVE size_t get_stack_free() {
+    return emscripten_stack_get_free();
+}
 
 }
