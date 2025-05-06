@@ -10,7 +10,7 @@ emcc --no-entry \
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=example \
     -sMODULARIZE \
-    -sEXPORTED_RUNTIME_METHODS=wasmExports,wasmTable,addFunction,removeFunction,ccall,cwrap,allocate,intArrayFromString,intArrayToString,getValue,setValue,UTF8ToString,stringToUTF8,writeArrayToMemory,lengthBytesUTF8 \
+    -sEXPORTED_RUNTIME_METHODS=wasmExports,wasmTable,addFunction,removeFunction,ccall,cwrap,allocate,intArrayFromString,intArrayToString,getValue,setValue,UTF8ToString,stringToUTF8,writeArrayToMemory,lengthBytesUTF8,HEAPU8,stackSave,stackRestore \
     -sEXPORTED_FUNCTIONS=_malloc,stackAlloc,_free \
     -sFULL_ES3 \
     -o example_lib.js \
