@@ -482,10 +482,34 @@ extension type const Array<T extends NativeType>._(
   }
 }
 
+extension ArrayInt32Ext on Array<Int32> {
+  double operator [](int i) {
+    return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  }
+}
+
+extension ArrayFloat32Ext on Array<Float32> {
+  double operator [](int i) {
+    return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  }
+}
+
+extension ArrayFloat64Ext on Array<Float64> {
+  double operator [](int i) {
+    return _lib.getValue(_.addr + (i * 8), 'double').toDartDouble;
+  }
+}
+
+
 late NativeLibrary _lib;
 
 Pointer<T> malloc<T extends NativeType>(int numBytes) {
   return _lib._malloc<T>(numBytes);
+}
+
+Pointer<T> stackAlloc<T extends NativeType>(int numBytes) {
+  final ptr = _lib._stackAlloc<T>(numBytes);
+  return ptr;
 }
 
 void free(Pointer ptr) {
