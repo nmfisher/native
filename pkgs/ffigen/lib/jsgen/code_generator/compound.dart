@@ -138,7 +138,7 @@ extension ${name}Ext on Pointer<$name> {
       if (field.type is ConstantArray) {
         var arrType = field.type as ConstantArray;
         s.write(
-            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: Pointer<${field.type.baseArrayType.getWasmInteropType(w)}>(addr), numElements: ${arrType.length}));\n');
+            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: Pointer<${field.type.baseArrayType.getWasmInteropType(w)}>(addr) + $offset, numElements: ${arrType.length}));\n');
       } else if (field.type is PointerType) {
         s.write('final ${field.name} = ${field.type.getDartType(w)}(_lib.getValue(this + $offset, "i32").toDartInt);\n');
       } else {
