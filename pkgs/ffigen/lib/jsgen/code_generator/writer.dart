@@ -498,6 +498,9 @@ extension ArrayFloat64Ext on Array<Float64> {
   double operator [](int i) {
     return _lib.getValue(_.addr + (i * 8), 'double').toDartDouble;
   }
+  void operator []=(int i, double v) {
+    _lib.setValue(_.addr + (i * 8), v.toJS, 'double');
+  }
 }
 
 
@@ -546,14 +549,25 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   static NativeLibrary get instance => _lib;
   
   static void initBindings(String moduleName) {
-    _lib = globalContext.getProperty(moduleName.toJS);
+    var lib = globalContext.getProperty(moduleName.toJS);
+    if (lib == null) {
+      throw Exception("Failed to find JS module \${moduleName}");
+    }
+    _lib = lib as NativeLibrary;
   }
 
   @JS('stackAlloc')
   external Pointer<T> _stackAlloc<T extends NativeType>(int numBytes);
-
+  
   external Pointer<T> _malloc<T extends NativeType>(int numBytes);
+  
   external void _free(Pointer ptr);
+  
+  @JS('stackSave')
+  external Pointer<Void> stackSave();
+
+  @JS('stackRestore')
+  external void stackRestore(Pointer<Void> ptr);
 
   @JS('getValue')
   external JSBigInt getValueBigInt(Pointer addr, String llvmType);

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'compound.dart';
+import 'writer.dart';
 
 /// A binding for C Struct.
 ///

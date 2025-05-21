@@ -148,26 +148,10 @@ class Func extends Binding {
       // 3) adjust the interop argument to accept a pointer
 
       if (paramType is Struct) {
-        final argPtrName = '${param.name}_structPtr';
-
-        var paramConstructor =
-            'final $argPtrName = ${paramType.name}.stackAlloc();\n';
-
-        int offset = 0;
-        for (final paramMember in paramType.members) {
-          if (paramMember.type is ConstantArray) {
-            paramConstructor +=
-                '_lib.writeArrayToMemory(${param.name}.${paramMember.name}.asUint8List().toJS, ${argPtrName} + $offset);';
-          } else {
-            paramConstructor +=
-                "_lib.setValue(${argPtrName} + $offset, ${param.name}.${paramMember.name}.toJS, '${paramMember.type.llvmType}');\n";
-          }
-          offset += paramMember.type.sizeInBytes;
-        }
-        interopArgumentConstructors.add(paramConstructor);
-        interopArguments.add(Parameter(
-            name: argPtrName,
-            type: PointerType(paramType)));
+        interopArgumentConstructors
+            .add('final ${param.name}Ptr = ${param.name}._address;');
+        interopArguments.add(
+            Parameter(name: '${param.name}Ptr', type: PointerType(paramType)));
         userArguments.add(
             Parameter(type: Struct(name: paramType.name), name: param.name));
       } else if (paramType is PointerType) {
@@ -190,15 +174,15 @@ class Func extends Binding {
           w.markNativeFunction(child.type);
         }
 
-        if(child is Struct) {
+        if (child is Struct) {
           interopArguments.add(Parameter(
-            name: param.name,
-            originalName: param.originalName,
-            type: PointerType(child)));
+              name: param.name,
+              originalName: param.originalName,
+              type: PointerType(child)));
         } else {
           interopArguments.add(param);
         }
-        
+
         userArguments.add(param);
       } else {
         interopArguments.add(param);
@@ -226,7 +210,7 @@ class Func extends Binding {
           .add('final ${outParam.name} = ${structType.name}.stackAlloc();');
 
       interopArguments.insert(0, outParam);
-          
+
       interopReturnTypeConstructors.add('return ${outParam.name}.toDart();');
       // if the return type is a PointerPointer, we need to wrap inside a Pointer
     } else if (functionType.returnType is PointerType ||
@@ -249,13 +233,17 @@ class Func extends Binding {
         userReturnType = ptrType.getDartType(w);
       }
 
-      interopReturnTypeConstructors.add('return ${functionType.returnType.getDartType(w)}(result);');
-    } else if (functionType.returnType is EnumClass && !(functionType.returnType as EnumClass).generateAsInt) {
+      interopReturnTypeConstructors
+          .add('return ${functionType.returnType.getDartType(w)}(result);');
+    } else if (functionType.returnType is EnumClass &&
+        !(functionType.returnType as EnumClass).generateAsInt) {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
-    } else if(functionType.returnType is NativeType && functionType.returnType.llvmType == "i64") {
-      if(functionType.returnType.getNativeType() == "uint64_t") {
-        interopReturnTypeConstructors.add('return bigIntasUintN(64,result).toDart;');
+    } else if (functionType.returnType is NativeType &&
+        functionType.returnType.llvmType == "i64") {
+      if (functionType.returnType.getNativeType() == "uint64_t") {
+        interopReturnTypeConstructors
+            .add('return bigIntasUintN(64,result).toDart;');
       } else {
         interopReturnTypeConstructors.add('return result.toDart;');
       }
@@ -275,19 +263,23 @@ class Func extends Binding {
       }
 
       if (p.type is PointerType) {
-        return '${p.name}';// as ${p.type.getWasmInteropType(w)}';
+        if ((p.type.baseType is Struct)) {
+          return '${p.name}.cast()';
+        }
+
+        return '${p.name}'; // as ${p.type.getWasmInteropType(w)}';
       }
 
       if (p.type is EnumClass) {
-        if((p.type as EnumClass).generateAsInt) {
+        if ((p.type as EnumClass).generateAsInt) {
           return '${p.name}';
         } else {
           return '${p.name}.value';
         }
       }
 
-      if(p.type.llvmType == "i64") {
-          return '${p.name}.toJSBigInt';
+      if (p.type.llvmType == "i64") {
+        return '${p.name}.toJSBigInt';
       }
 
       if (p.type is Typealias && p.type.typealiasType is PointerType) {
