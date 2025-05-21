@@ -301,6 +301,10 @@ extension ArrayFloat64Ext on Array<Float64> {
   double operator [](int i) {
     return _lib.getValue(_.addr + (i * 8), 'double').toDartDouble;
   }
+
+  void operator []=(int i, double v) {
+    _lib.setValue(_.addr + (i * 8), v.toJS, 'double');
+  }
 }
 
 late NativeLibrary _lib;
@@ -346,26 +350,25 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   static NativeLibrary get instance => _lib;
 
   static void initBindings(String moduleName) {
-    _lib = globalContext.getProperty(moduleName.toJS);
+    var lib = globalContext.getProperty(moduleName.toJS);
+    if (lib == null) {
+      throw Exception("Failed to find JS module ${moduleName}");
+    }
+    _lib = lib as NativeLibrary;
   }
 
   @JS('stackAlloc')
   external Pointer<T> _stackAlloc<T extends NativeType>(int numBytes);
 
   external Pointer<T> _malloc<T extends NativeType>(int numBytes);
+
   external void _free(Pointer ptr);
-  
-  @JS('_foo')
-  external void foo(Pointer<Void> ptr);
 
   @JS('stackSave')
   external Pointer<Void> stackSave();
 
   @JS('stackRestore')
   external void stackRestore(Pointer<Void> ptr);
-
-  @JS('_get_stack_free')
-  external int get_stack_free();
 
   @JS('getValue')
   external JSBigInt getValueBigInt(Pointer addr, String llvmType);
@@ -390,6 +393,10 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external JSUint8Array get HEAPU8;
 
   external Pointer<Int32> _GLOBALINT;
+
+  external void _write(
+    Pointer<Int32> out,
+  );
   external int _sum(
     int a,
     int b,
@@ -430,14 +437,14 @@ extension type NativeLibrary(JSObject _) implements JSObject {
     Pointer<Void> arg,
   );
   external int _struct_as_argument(
-    Pointer<double3> vector_structPtr,
+    Pointer<double3> vectorPtr,
   );
   external Pointer<MyStruct> _return_struct_ptr();
   external void _accept_struct_ptr(
     Pointer<MyStruct> arg,
   );
   external void _accept_struct_with_array(
-    Pointer<StructWithArray> arg_structPtr,
+    Pointer<StructWithArray> argPtr,
   );
   external void _return_struct_with_array_by_value(
     Pointer<StructWithArray> StructWithArray_out,
@@ -483,6 +490,13 @@ extension type NativeLibrary(JSObject _) implements JSObject {
 BigInt get GLOBALINT {
   final value = _lib.getValueBigInt(_lib._GLOBALINT, "i64");
   return bigIntasUintN(64, value).toDart;
+}
+
+void write(
+  self.Pointer<Int32> out,
+) {
+  final result = _lib._write(out);
+  return result;
 }
 
 int sum(
@@ -580,12 +594,8 @@ void accept_void_ptr(
 int struct_as_argument(
   double3 vector,
 ) {
-  final vector_structPtr = double3.stackAlloc();
-  _lib.setValue(vector_structPtr + 0, vector.x.toJS, 'double');
-  _lib.setValue(vector_structPtr + 8, vector.y.toJS, 'double');
-  _lib.setValue(vector_structPtr + 16, vector.z.toJS, 'double');
-
-  final result = _lib._struct_as_argument(vector_structPtr);
+  final vectorPtr = vector._address;
+  final result = _lib._struct_as_argument(vectorPtr.cast());
   return result;
 }
 
@@ -597,23 +607,22 @@ self.Pointer<MyStruct> return_struct_ptr() {
 void accept_struct_ptr(
   self.Pointer<MyStruct> arg,
 ) {
-  final result = _lib._accept_struct_ptr(arg);
+  final result = _lib._accept_struct_ptr(arg.cast());
   return result;
 }
 
 void accept_struct_with_array(
   StructWithArray arg,
 ) {
-  final arg_structPtr = StructWithArray.stackAlloc();
-  _lib.writeArrayToMemory(arg.array1.asUint8List().toJS, arg_structPtr + 0);
-  _lib.writeArrayToMemory(arg.array2.asUint8List().toJS, arg_structPtr + 16);
-  final result = _lib._accept_struct_with_array(arg_structPtr);
+  final argPtr = arg._address;
+  final result = _lib._accept_struct_with_array(argPtr.cast());
   return result;
 }
 
 StructWithArray return_struct_with_array_by_value() {
   final StructWithArray_out = StructWithArray.stackAlloc();
-  final result = _lib._return_struct_with_array_by_value(StructWithArray_out);
+  final result =
+      _lib._return_struct_with_array_by_value(StructWithArray_out.cast());
   return StructWithArray_out.toDart();
 }
 
@@ -622,7 +631,7 @@ MyStruct return_struct_by_value(
   self.Pointer<Char> b,
 ) {
   final MyStruct_out = MyStruct.stackAlloc();
-  final result = _lib._return_struct_by_value(MyStruct_out, a, b);
+  final result = _lib._return_struct_by_value(MyStruct_out.cast(), a, b);
   return MyStruct_out.toDart();
 }
 
@@ -666,7 +675,7 @@ void accept_fn_pointer_with_ptr_args(
 void accept_opaque_struct_ptr(
   self.Pointer<MyOpaqueStruct> ptr,
 ) {
-  final result = _lib._accept_opaque_struct_ptr(ptr);
+  final result = _lib._accept_opaque_struct_ptr(ptr.cast());
   return result;
 }
 
@@ -694,8 +703,8 @@ BigInt bigint_method(
   return bigIntasUintN(64, result).toDart;
 }
 
-Dartsize_t size_tmethod(
-  Dartsize_t number,
+Dart__darwin_size_t size_tmethod(
+  Dart__darwin_size_t number,
 ) {
   final result = _lib._size_tmethod(number);
   return result;
@@ -829,28 +838,83 @@ sealed class MyEnumAsInt {
   static const ENUM_AS_INT_VAL2 = 1;
 }
 
-typedef size_t = int;
-typedef Dartsize_t = int;
+typedef size_t = __darwin_size_t;
+typedef __darwin_size_t = int;
+typedef Dart__darwin_size_t = int;
+
+const int __has_safe_buffers = 0;
+
+const int __DARWIN_ONLY_64_BIT_INO_T = 1;
+
+const int __DARWIN_ONLY_UNIX_CONFORMANCE = 1;
+
+const int __DARWIN_ONLY_VERS_1050 = 1;
+
+const int __DARWIN_UNIX03 = 1;
+
+const int __DARWIN_64_BIT_INO_T = 1;
+
+const int __DARWIN_VERS_1050 = 1;
+
+const int __DARWIN_NON_CANCELABLE = 0;
+
+const String __DARWIN_SUF_EXTSN = '\$DARWIN_EXTSN';
+
+const int __DARWIN_C_ANSI = 4096;
+
+const int __DARWIN_C_FULL = 900000;
+
+const int __DARWIN_C_LEVEL = 900000;
+
+const int __STDC_WANT_LIB_EXT1__ = 1;
+
+const int __DARWIN_NO_LONG_LONG = 0;
+
+const int _DARWIN_FEATURE_64_BIT_INODE = 1;
+
+const int _DARWIN_FEATURE_ONLY_64_BIT_INODE = 1;
+
+const int _DARWIN_FEATURE_ONLY_VERS_1050 = 1;
+
+const int _DARWIN_FEATURE_ONLY_UNIX_CONFORMANCE = 1;
+
+const int _DARWIN_FEATURE_UNIX_CONFORMANCE = 3;
+
+const int __has_ptrcheck = 0;
+
+const int __DARWIN_NULL = 0;
+
+const int __PTHREAD_SIZE__ = 8176;
+
+const int __PTHREAD_ATTR_SIZE__ = 56;
+
+const int __PTHREAD_MUTEXATTR_SIZE__ = 8;
+
+const int __PTHREAD_MUTEX_SIZE__ = 56;
+
+const int __PTHREAD_CONDATTR_SIZE__ = 8;
+
+const int __PTHREAD_COND_SIZE__ = 40;
+
+const int __PTHREAD_ONCE_SIZE__ = 8;
+
+const int __PTHREAD_RWLOCK_SIZE__ = 192;
+
+const int __PTHREAD_RWLOCKATTR_SIZE__ = 16;
+
+const int __DARWIN_WCHAR_MAX = 2147483647;
+
+const int __DARWIN_WCHAR_MIN = -2147483648;
+
+const int __DARWIN_WEOF = -1;
+
+const int _FORTIFY_SOURCE = 2;
 
 const int NULL = 0;
 
-const int __LITTLE_ENDIAN = 1234;
+const int USER_ADDR_NULL = 0;
 
-const int __BIG_ENDIAN = 4321;
-
-const int __USE_TIME_BITS64 = 1;
-
-const int __BYTE_ORDER = 1234;
-
-const int __LONG_MAX = 2147483647;
-
-const int INT8_MIN = -128;
-
-const int INT16_MIN = -32768;
-
-const int INT32_MIN = -2147483648;
-
-const int INT64_MIN = -9223372036854775808;
+const int __WORDSIZE = 64;
 
 const int INT8_MAX = 127;
 
@@ -860,6 +924,14 @@ const int INT32_MAX = 2147483647;
 
 const int INT64_MAX = 9223372036854775807;
 
+const int INT8_MIN = -128;
+
+const int INT16_MIN = -32768;
+
+const int INT32_MIN = -2147483648;
+
+const int INT64_MIN = -9223372036854775808;
+
 const int UINT8_MAX = 255;
 
 const int UINT16_MAX = 65535;
@@ -867,10 +939,6 @@ const int UINT16_MAX = 65535;
 const int UINT32_MAX = 4294967295;
 
 const int UINT64_MAX = -1;
-
-const int INT_FAST8_MIN = -128;
-
-const int INT_FAST64_MIN = -9223372036854775808;
 
 const int INT_LEAST8_MIN = -128;
 
@@ -880,10 +948,6 @@ const int INT_LEAST32_MIN = -2147483648;
 
 const int INT_LEAST64_MIN = -9223372036854775808;
 
-const int INT_FAST8_MAX = 127;
-
-const int INT_FAST64_MAX = 9223372036854775807;
-
 const int INT_LEAST8_MAX = 127;
 
 const int INT_LEAST16_MAX = 32767;
@@ -891,10 +955,6 @@ const int INT_LEAST16_MAX = 32767;
 const int INT_LEAST32_MAX = 2147483647;
 
 const int INT_LEAST64_MAX = 9223372036854775807;
-
-const int UINT_FAST8_MAX = 255;
-
-const int UINT_FAST64_MAX = -1;
 
 const int UINT_LEAST8_MAX = 255;
 
@@ -904,47 +964,63 @@ const int UINT_LEAST32_MAX = 4294967295;
 
 const int UINT_LEAST64_MAX = -1;
 
-const int INTMAX_MIN = -9223372036854775808;
+const int INT_FAST8_MIN = -128;
+
+const int INT_FAST16_MIN = -32768;
+
+const int INT_FAST32_MIN = -2147483648;
+
+const int INT_FAST64_MIN = -9223372036854775808;
+
+const int INT_FAST8_MAX = 127;
+
+const int INT_FAST16_MAX = 32767;
+
+const int INT_FAST32_MAX = 2147483647;
+
+const int INT_FAST64_MAX = 9223372036854775807;
+
+const int UINT_FAST8_MAX = 255;
+
+const int UINT_FAST16_MAX = 65535;
+
+const int UINT_FAST32_MAX = 4294967295;
+
+const int UINT_FAST64_MAX = -1;
+
+const int INTPTR_MAX = 9223372036854775807;
+
+const int INTPTR_MIN = -9223372036854775808;
+
+const int UINTPTR_MAX = -1;
 
 const int INTMAX_MAX = 9223372036854775807;
 
 const int UINTMAX_MAX = -1;
 
-const int WINT_MIN = 0;
+const int INTMAX_MIN = -9223372036854775808;
 
-const int WINT_MAX = 4294967295;
+const int PTRDIFF_MIN = -9223372036854775808;
+
+const int PTRDIFF_MAX = 9223372036854775807;
+
+const int SIZE_MAX = -1;
+
+const int RSIZE_MAX = 9223372036854775807;
 
 const int WCHAR_MAX = 2147483647;
 
 const int WCHAR_MIN = -2147483648;
 
+const int WINT_MIN = -2147483648;
+
+const int WINT_MAX = 2147483647;
+
 const int SIG_ATOMIC_MIN = -2147483648;
 
 const int SIG_ATOMIC_MAX = 2147483647;
 
-const int INT_FAST16_MIN = -2147483648;
-
-const int INT_FAST32_MIN = -2147483648;
-
-const int INT_FAST16_MAX = 2147483647;
-
-const int INT_FAST32_MAX = 2147483647;
-
-const int UINT_FAST16_MAX = 4294967295;
-
-const int UINT_FAST32_MAX = 4294967295;
-
-const int INTPTR_MIN = -2147483648;
-
-const int INTPTR_MAX = 2147483647;
-
-const int UINTPTR_MAX = 4294967295;
-
-const int PTRDIFF_MIN = -2147483648;
-
-const int PTRDIFF_MAX = 2147483647;
-
-const int SIZE_MAX = 4294967295;
+const int __bool_true_false_are_defined = 1;
 
 extension NativeFunctionPointer0<T extends NativeType> on void Function() {
   // orignal type void Function() void Function() dart type void Function()

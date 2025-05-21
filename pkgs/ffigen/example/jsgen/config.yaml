@@ -5,7 +5,7 @@ description: Bindings to `headers/example.h`.
 output: 'lib/generated_bindings.dart'
 headers:
   entry-points:
-    - 'native/headers/example.h'
+    - 'native/include/example.h'
 enums:
   as-int:
     include:

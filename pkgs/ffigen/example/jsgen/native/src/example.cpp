@@ -13,6 +13,11 @@
 extern "C" {
 EMSCRIPTEN_KEEPALIVE uint64_t GLOBALINT = 9223372036854775808;
 
+void EMSCRIPTEN_KEEPALIVE write(int32_t *out) {
+    
+    *out = 10;
+}
+
 void EMSCRIPTEN_KEEPALIVE check_buffer(uint8_t *addr) {
     for(int i = 0; i < 10; i++) {
         emscripten_console_logf("%d %d", i, addr[i]);

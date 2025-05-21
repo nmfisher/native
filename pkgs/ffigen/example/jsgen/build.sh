@@ -1,12 +1,13 @@
 mkdir -p build
-dart compile wasm --enable-asserts  bin/example.dart -o build/example.wasm || exit -1;
+dart compile wasm --enable-asserts  bin/example.dart -O0 --shared-memory=100 -v -o build/example.wasm || exit -1;
 cd build
 emcc --no-entry \
     -lembind \
-    -I../native/headers \
+    -I../native/include \
     -sENVIRONMENT=shell,node \
     -sWASM_BIGINT=1 \
-    -sALLOW_MEMORY_GROWTH=1 \
+    -sALLOW_MEMORY_GROWTH=0 \
+    -sIMPORTED_MEMORY \
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=example \
     -sMODULARIZE \

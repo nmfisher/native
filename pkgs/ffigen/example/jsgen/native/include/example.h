@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -9,6 +10,31 @@ extern "C"
 extern uint64_t GLOBALINT;
 
 typedef void (*FunctionTypedef)(void *const owner);
+
+typedef struct TMaterialKey {
+		bool doubleSided;
+		bool unlit;
+		bool hasVertexColors;
+		bool hasBaseColorTexture;
+		bool hasNormalTexture;
+		bool hasOcclusionTexture;
+		bool hasEmissiveTexture;
+		bool useSpecularGlossiness;
+        int alphaMode;
+		bool enableDiagnostics;
+		union {
+			struct {
+				bool hasMetallicRoughnessTexture;
+				uint8_t metallicRoughnessUV;
+			};
+			struct {
+				bool hasSpecularGlossinessTexture;
+				uint8_t specularGlossinessUV;
+			};
+        };
+} TMaterialKey;
+
+void foo(TMaterialKey);
 
 typedef struct { 
     double x;
@@ -33,6 +59,7 @@ typedef struct StructWithArray StructWithArray;
 
 typedef int INTTYPE;
 
+void write(int32_t* out);
 int sum(int a, int b);
 
 INTTYPE sum_with_typedef(INTTYPE a, INTTYPE b);
