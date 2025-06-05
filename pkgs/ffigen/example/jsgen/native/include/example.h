@@ -11,31 +11,6 @@ extern uint64_t GLOBALINT;
 
 typedef void (*FunctionTypedef)(void *const owner);
 
-typedef struct TMaterialKey {
-		bool doubleSided;
-		bool unlit;
-		bool hasVertexColors;
-		bool hasBaseColorTexture;
-		bool hasNormalTexture;
-		bool hasOcclusionTexture;
-		bool hasEmissiveTexture;
-		bool useSpecularGlossiness;
-        int alphaMode;
-		bool enableDiagnostics;
-		union {
-			struct {
-				bool hasMetallicRoughnessTexture;
-				uint8_t metallicRoughnessUV;
-			};
-			struct {
-				bool hasSpecularGlossinessTexture;
-				uint8_t specularGlossinessUV;
-			};
-        };
-} TMaterialKey;
-
-void foo(TMaterialKey);
-
 typedef struct { 
     double x;
     double y; 
@@ -94,6 +69,8 @@ void accept_fn_pointer_with_no_args(void(*callback)());
 void accept_fn_pointer_with_primitive_args(void(*callback)(int arg));
 void accept_fn_pointer_with_ptr_args(void(*callback)(MyStruct *arg));
 void accept_opaque_struct_ptr(MyOpaqueStruct *ptr);
+
+bool returns_bool();
 
 enum MyEnum { 
     ENUM_VAL1,
