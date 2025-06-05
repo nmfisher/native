@@ -186,12 +186,6 @@ extension Float32Pointer on Pointer<Float32> {
     return _lib.getValue(this, llvmType).toDartDouble;
   }
 
-  Float32List asTypedList(int length) {
-    final start = addr;
-    final end = addr + (length * 4);
-    return Float32List.sublistView(_lib.HEAPU8.toDart, start, end);
-  }
-
   double operator [](int i) {
     return _lib.getValue(this + (i * 4), 'f').toDartDouble;
   }
@@ -212,12 +206,6 @@ extension Float64Pointer on Pointer<Float64> {
 
   double getValue() {
     return _lib.getValue(this, llvmType).toDartDouble;
-  }
-
-  Float64List asTypedList(int length) {
-    final start = addr;
-    final end = addr + (length * 8);
-    return Float64List.sublistView(_lib.HEAPU8.toDart, start, end);
   }
 
   static Pointer<Float64> fromAddress(int addr) => Pointer<Float64>(addr);
@@ -256,7 +244,7 @@ sealed class Struct extends NativeType {
 
   Struct(this._address);
 
-  static create<T extends Struct>() {
+  static T create<T extends Struct>() {
     throw Exception();
   }
 }
@@ -391,6 +379,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
       JSFunction f, String signature);
   external void removeFunction<T>(Pointer<NativeFunction<T>> f);
   external JSUint8Array get HEAPU8;
+  external JSFloat32Array get HEAPF32;
 
   external Pointer<Int32> _GLOBALINT;
   external void _write(
@@ -725,27 +714,39 @@ typedef DartFunctionTypedefFunction = void Function(self.Pointer<Void> owner);
 
 extension double3Ext on Pointer<double3> {
   double3 toDart() {
-    var x = _lib.getValue(this + 0, "double").toDartDouble;
-    var y = _lib.getValue(this + 8, "double").toDartDouble;
-    var z = _lib.getValue(this + 16, "double").toDartDouble;
-    return double3(x, y, z, this);
-  }
-
-  void setFrom(double3 dartType) {
-    _lib.setValue(this + 0, dartType.x.toJS, "double");
-    _lib.setValue(this + 8, dartType.y.toJS, "double");
-    _lib.setValue(this + 16, dartType.z.toJS, "double");
+    return double3(this);
   }
 }
 
 final class double3 extends self.Struct {
-  final double x;
+  double get x {
+    final value = _lib.getValue(this._address + 0, 'double').toDartDouble;
+    return value;
+  }
 
-  final double y;
+  set x(double val) {
+    _lib.setValue(this._address + 0, val.toJS, 'double');
+  }
 
-  final double z;
+  double get y {
+    final value = _lib.getValue(this._address + 8, 'double').toDartDouble;
+    return value;
+  }
 
-  double3(this.x, this.y, this.z, super._address);
+  set y(double val) {
+    _lib.setValue(this._address + 8, val.toJS, 'double');
+  }
+
+  double get z {
+    final value = _lib.getValue(this._address + 16, 'double').toDartDouble;
+    return value;
+  }
+
+  set z(double val) {
+    _lib.setValue(this._address + 16, val.toJS, 'double');
+  }
+
+  double3(super._address);
 
   static Pointer<double3> stackAlloc() {
     return Pointer<double3>(_lib._stackAlloc<double3>(24));
@@ -754,27 +755,39 @@ final class double3 extends self.Struct {
 
 extension MyStructExt on Pointer<MyStruct> {
   MyStruct toDart() {
-    var a = _lib.getValue(this + 0, "float").toDartDouble;
-    final b = self.Pointer<Char>(_lib.getValue(this + 4, "i32").toDartInt);
-    var c = _lib.getValue(this + 8, "i32").toDartInt;
-    return MyStruct(a, b.cast(), c, this);
-  }
-
-  void setFrom(MyStruct dartType) {
-    _lib.setValue(this + 0, dartType.a.toJS, "float");
-    _lib.setValue(this + 4, dartType.b.addr.toJS, "*");
-    _lib.setValue(this + 8, dartType.c.toJS, "i32");
+    return MyStruct(this);
   }
 }
 
 final class MyStruct extends self.Struct {
-  final double a;
+  double get a {
+    final value = _lib.getValue(this._address + 0, 'float').toDartDouble;
+    return value;
+  }
 
-  final self.Pointer<Char> b;
+  set a(double val) {
+    _lib.setValue(this._address + 0, val.toJS, 'float');
+  }
 
-  final int c;
+  self.Pointer<Char> get b {
+    final value = _lib.getValue(this._address + 4, '*');
+    return self.Pointer<Char>(value.toDartInt);
+  }
 
-  MyStruct(this.a, this.b, this.c, super._address);
+  set b(self.Pointer<Char> val) {
+    _lib.setValue(this._address + 4, val.toJS, '*');
+  }
+
+  int get c {
+    final value = _lib.getValue(this._address + 8, 'i32').toDartInt;
+    return value;
+  }
+
+  set c(int val) {
+    _lib.setValue(this._address + 8, val.toJS, 'i32');
+  }
+
+  MyStruct(super._address);
 
   static Pointer<MyStruct> stackAlloc() {
     return Pointer<MyStruct>(_lib._stackAlloc<MyStruct>(12));
@@ -783,25 +796,32 @@ final class MyStruct extends self.Struct {
 
 extension StructWithArrayExt on Pointer<StructWithArray> {
   StructWithArray toDart() {
-    var array1 =
-        Array<Float64>._((addr: Pointer<Float64>(addr) + 0, numElements: 2));
-    var array2 =
-        Array<Float64>._((addr: Pointer<Float64>(addr) + 16, numElements: 3));
-    return StructWithArray(array1.cast(), array2.cast(), this);
-  }
-
-  void setFrom(StructWithArray dartType) {
-    _lib.setValue(this + 0, dartType.array1._.addr.addr.toJS, "*");
-    _lib.setValue(this + 16, dartType.array2._.addr.addr.toJS, "*");
+    return StructWithArray(this);
   }
 }
 
 final class StructWithArray extends self.Struct {
-  Array<Float64> array1;
+  Array<Float64> get array1 {
+    final value = _lib.getValue(this._address + 0, '*');
+    return Array<Float64>._(
+        (numElements: 2, addr: Pointer<Float64>(this._address + 0)));
+  }
 
-  Array<Float64> array2;
+  set array1(Array<Float64> val) {
+    _lib.setValue(this._address + 0, val._.addr.addr.toJS, '*');
+  }
 
-  StructWithArray(this.array1, this.array2, super._address);
+  Array<Float64> get array2 {
+    final value = _lib.getValue(this._address + 16, '*');
+    return Array<Float64>._(
+        (numElements: 3, addr: Pointer<Float64>(this._address + 16)));
+  }
+
+  set array2(Array<Float64> val) {
+    _lib.setValue(this._address + 16, val._.addr.addr.toJS, '*');
+  }
+
+  StructWithArray(super._address);
 
   static Pointer<StructWithArray> stackAlloc() {
     return Pointer<StructWithArray>(_lib._stackAlloc<StructWithArray>(40));
@@ -812,8 +832,6 @@ extension MyOpaqueStructExt on Pointer<MyOpaqueStruct> {
   MyOpaqueStruct toDart() {
     return MyOpaqueStruct(this);
   }
-
-  void setFrom(MyOpaqueStruct dartType) {}
 }
 
 final class MyOpaqueStruct extends self.Struct {

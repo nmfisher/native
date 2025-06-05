@@ -48,10 +48,14 @@ void main(List<String> args) async {
   assert(myStruct.b.toDartString() == 'MY STRING', myStruct.b.toDartString());
 
   var ptr = MyStruct.stackAlloc();
-  ptr.setFrom(MyStruct(20.0, Pointer<Char>(0 as Pointer<Char>), 8, ptr));
+  var struct = ptr.toDart();
+  struct.a = 20.0;
+  struct.b = Pointer<Char>(0 as Pointer<Char>);
+  struct.c = 8;
+  
   assert(ptr.toDart().a == 20.0, ptr.toDart().a);
 
-  var structArg = double3(1.0, 2.0, 3.0, ptr);
+  var structArg = double3(ptr)..x = 1.0..y = 2.0..z=3.0;
   assert(struct_as_argument(structArg) == 6, struct_as_argument(structArg));
 
   accept_struct_ptr(Pointer<Never>(0));
