@@ -393,7 +393,6 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external JSUint8Array get HEAPU8;
 
   external Pointer<Int32> _GLOBALINT;
-
   external void _write(
     Pointer<Int32> out,
   );
@@ -474,6 +473,7 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   external void _accept_opaque_struct_ptr(
     Pointer<MyOpaqueStruct> ptr,
   );
+  external int _returns_bool();
   external int _return_enum();
   external int _accept_enum(
     int val,
@@ -677,6 +677,11 @@ void accept_opaque_struct_ptr(
 ) {
   final result = _lib._accept_opaque_struct_ptr(ptr.cast());
   return result;
+}
+
+bool returns_bool() {
+  final result = _lib._returns_bool();
+  return result == 1;
 }
 
 MyEnum return_enum() {
