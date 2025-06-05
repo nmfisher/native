@@ -131,60 +131,15 @@ abstract class Compound extends BindingType {
     s.write('''
 
 extension ${name}Ext on Pointer<$name> {
-  ${enclosingClassName} toDart() {''');
-    int offset = 0;
-
-    for (final field in members) {
-      if (field.type is ConstantArray) {
-        var arrType = field.type as ConstantArray;
-        s.write(
-            'var ${field.name} = Array<${field.type.baseArrayType.getWasmInteropType(w)}>._((addr: Pointer<${field.type.baseArrayType.getWasmInteropType(w)}>(addr) + $offset, numElements: ${arrType.length}));\n');
-      } else if (field.type is PointerType) {
-        s.write('final ${field.name} = ${field.type.getDartType(w)}(_lib.getValue(this + $offset, "i32").toDartInt);\n');
-      } else {
-        final llvmType = field.type is NativeType
-            ? (field.type as NativeType).llvmType
-            : "*";
-        final toDart = field.type.baseType.getDartType(w) == "double"
-            ? 'toDartDouble'
-            : 'toDartInt';
-        s.write(
-            'var ${field.name} = _lib.getValue(this + $offset, "$llvmType").$toDart;\n');
-      }
-      offset += field.type.sizeInBytes;
-    }
-    var constructorArgs = members.map((m) => "${m.name}${m.type is PointerType ? ".cast()" : ""}").toList();
-    constructorArgs.add("this");
-    s.write(
-        '''return ${enclosingClassName}(${constructorArgs.join(",")});
-    }''');
-
-    s.write('''void setFrom(${enclosingClassName} dartType) {''');
-    offset = 0;
-    for (final field in members) {
-      final fieldType = field.type;
-      final llvmType = fieldType.llvmType;
-      String fieldAccessor = 'dartType.${field.name}';
-      if (fieldType is ConstantArray) {
-        fieldAccessor += '._.addr.addr';
-      } else if (field.type is PointerType) {
-        fieldAccessor += '.addr';
-      }
-      fieldAccessor += '.toJS';
-      s.write(
-          '_lib.setValue(this + $offset, $fieldAccessor, "$llvmType");\n');
-      offset += field.type.sizeInBytes;
-    }
-    s.write('}\n}');
+  $enclosingClassName toDart() {
+    return $enclosingClassName(this);
+  }
+}''');
 
     s.write('final class $enclosingClassName extends ');
-    s.write(
-        '${w.selfImportPrefix}.${isOpaque ? 'Struct' : dartClassName}{\n');
+    s.write('${w.selfImportPrefix}.${isOpaque ? 'Struct' : dartClassName}{\n');
     const depth = '  ';
-
-    // Constructor parameters
-    List<String> constructorParams = [];
-
+    int offset = 0;
     for (final m in members) {
       m.name = localUniqueNamer.makeUnique(m.name);
       if (m.dartDoc != null) {
@@ -192,23 +147,49 @@ extension ${name}Ext on Pointer<$name> {
         s.writeAll(m.dartDoc!.split('\n'), '\n$depth/// ');
         s.write('\n');
       }
-      if (m.type case final ConstantArray arrayType) {
-        s.write('${depth}${_getInlineArrayTypeString(m.type, w)} ');
-        s.write('${m.name};\n\n');
+      final memberName = m.name;
 
-        constructorParams.add('this.${m.name}');
-      } else {
-        final memberName = m.name;
+      final dartType = m.type is PointerType
+          ? m.type.getDartType(w)
+          : m.type.getInteropDartType(w);
 
-        if (m.type case final PointerType ptrType) {
-          s.write('${depth}final ${m.type.getDartType(w)} $memberName;\n\n');
-        } else {
-          s.write(
-              '${depth}final ${m.type.getInteropDartType(w)} $memberName;\n\n');
+      final toDart = switch (m.type.getDartType(w)) {
+        'double' => '.toDartDouble',
+        'int' => '.toDartInt',
+        _ => ''
+      };
+
+      String box(String inner) {
+        if (m.type is ConstantArray) {
+          var arrType = m.type as ConstantArray;
+          return '$dartType._((numElements: ${arrType.length}, addr: ${m.type.getInteropDartType(w)}(this._address + $offset)))';
+        } else if (m.type is PointerType) {
+          return '$dartType($inner.toDartInt)';
+        } else if (m.type is BooleanType) {
+          return '$inner.toDartInt == 1';
         }
-
-        constructorParams.add('this.$memberName');
+        return inner;
       }
+
+      String boxJS(String inner) {
+        if (m.type is BooleanType) {
+          return '($inner ? 1 : 0).toJS';
+        } else if (m.type is ConstantArray) {
+          return '${inner}._.addr.addr.toJS';
+        }
+        return '$inner.toJS';
+      }
+
+      s.write('''
+$dartType get $memberName {
+  final value = _lib.getValue(this._address + $offset, '${m.type.llvmType}')$toDart;
+  return ${box('value')};
+}
+set $memberName($dartType val) {
+  _lib.setValue(this._address + $offset, ${boxJS('val')}, '${m.type.llvmType}');
+}
+''');
+
       if (m.type case EnumClass(:final generateAsInt) when !generateAsInt) {
         final enumName = m.type.getDartType(w);
         final memberName = m.name;
@@ -217,20 +198,12 @@ extension ${name}Ext on Pointer<$name> {
           '$enumName.fromValue(${memberName}AsInt);\n\n',
         );
       }
-    }
 
-    constructorParams.add("super._address");
+      offset += m.type.sizeInBytes;
+    }
 
     // Add constructor with required named parameters
-    s.write('${depth} $enclosingClassName(\n');
-    for (int i = 0; i < constructorParams.length; i++) {
-      s.write('$depth$depth${constructorParams[i]}');
-      if (i < constructorParams.length - 1) {
-        s.write(',');
-      }
-      s.write('\n');
-    }
-    s.write('$depth);\n\n');
+    s.write('$enclosingClassName(super._address);\n\n');
 
     s.write('''
 static Pointer<$name> stackAlloc() {
