@@ -12,10 +12,11 @@ extension foo on JSArrayBuffer {
   external int byteLength;
 }
 
-
 void main(List<String> args) async {
   print("Running WASM example");
   NativeLibrary.initBindings("module");
+
+  assert(returns_bool() == false);
 
   var structWithArray = return_struct_with_array_by_value();
 
