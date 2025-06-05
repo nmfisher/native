@@ -171,4 +171,8 @@ EMSCRIPTEN_KEEPALIVE size_t get_stack_free() {
     return emscripten_stack_get_free();
 }
 
+EMSCRIPTEN_KEEPALIVE bool returns_bool() {
+    return false;
+}
+
 }
