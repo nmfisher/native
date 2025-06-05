@@ -240,13 +240,17 @@ class Func extends Binding {
       interopReturnTypeConstructors.add(
           'return ${functionType.returnType.getDartType(w)}.fromValue(result);');
     } else if (functionType.returnType is NativeType &&
-        functionType.returnType.llvmType == "i64") {
+        functionType.returnType.llvmType == 'i64') {
       if (functionType.returnType.getNativeType() == "uint64_t") {
         interopReturnTypeConstructors
             .add('return bigIntasUintN(64,result).toDart;');
       } else {
         interopReturnTypeConstructors.add('return result.toDart;');
       }
+    } else if (functionType.returnType is NativeType &&
+        functionType.returnType.getDartType(w) == 'bool') {
+      interopReturnType = 'int';
+      interopReturnTypeConstructors.add('return result == 1;');
     } else {
       interopReturnTypeConstructors.add('return result;');
     }
