@@ -384,6 +384,10 @@ extension Float32Pointer on Pointer<Float32> {
     _lib.setValue(this, value.toJS, llvmType);
   }
 
+  double get value {
+    return getValue();
+  }
+
   double getValue() {
     return _lib.getValue(this, llvmType).toDartDouble;
   }
