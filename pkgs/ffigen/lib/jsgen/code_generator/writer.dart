@@ -266,6 +266,12 @@ extension type Char._(NativeType value) implements NativeType {
   }
 }
 
+extension type Bool._(NativeType value) implements NativeType {
+  static Pointer<Bool> stackAlloc(int count) {
+    return Pointer<Bool>(_lib._stackAlloc<Char>(4 * count));
+  }
+}
+
 extension type const Uint32._(NativeType nt) implements NativeType {
   static Pointer<Uint32> stackAlloc(int count) {
     return _lib._stackAlloc<Uint32>(4 * count);
@@ -471,14 +477,20 @@ extension type const Array<T extends NativeType>._(
 }
 
 extension ArrayInt32Ext on Array<Int32> {
-  double operator [](int i) {
-    return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  int operator [](int i) {
+    return _lib.getValue(_.addr + (i * 4), 'i32').toDartInt;
+  }
+  void operator []=(int i, int v) {
+    _lib.setValue(_.addr + (i * 4), v.toJS, 'i32');
   }
 }
 
 extension ArrayFloat32Ext on Array<Float32> {
   double operator [](int i) {
     return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  }
+  void operator []=(int i, double v) {
+    _lib.setValue(_.addr + (i * 4), v.toJS, 'double');
   }
 }
 

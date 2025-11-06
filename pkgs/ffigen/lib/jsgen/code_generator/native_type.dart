@@ -75,6 +75,8 @@ class NativeType extends Type {
     switch(_nativeType) {
         case 'char':
           return 'Char';
+        case 'BOOL':
+          return 'Bool';
         case 'uint8_t':
           return 'Uint8';
         case 'int8_t':
