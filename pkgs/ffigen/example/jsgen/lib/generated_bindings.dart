@@ -70,6 +70,12 @@ extension type Char._(NativeType value) implements NativeType {
   }
 }
 
+extension type Bool._(NativeType value) implements NativeType {
+  static Pointer<Bool> stackAlloc(int count) {
+    return Pointer<Bool>(_lib._stackAlloc<Char>(4 * count));
+  }
+}
+
 extension type const Uint32._(NativeType nt) implements NativeType {
   static Pointer<Uint32> stackAlloc(int count) {
     return _lib._stackAlloc<Uint32>(4 * count);
@@ -239,20 +245,6 @@ extension DisposePointerClass<T extends NativeType> on Pointer<NativeFunction> {
   }
 }
 
-sealed class Struct extends NativeType {
-  final Pointer _address;
-
-  Struct(this._address);
-
-  static T create<T extends Struct>() {
-    throw Exception();
-  }
-}
-
-extension StructPointer<T extends Struct> on T {
-  Pointer<T> get address => _address as Pointer<T>;
-}
-
 extension type const Array<T extends NativeType>._(
     ({int numElements, Pointer<T> addr}) _) {
   Array<U> cast<U extends NativeType>() => this as Array<U>;
@@ -274,14 +266,22 @@ extension type const Array<T extends NativeType>._(
 }
 
 extension ArrayInt32Ext on Array<Int32> {
-  double operator [](int i) {
-    return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  int operator [](int i) {
+    return _lib.getValue(_.addr + (i * 4), 'i32').toDartInt;
+  }
+
+  void operator []=(int i, int v) {
+    _lib.setValue(_.addr + (i * 4), v.toJS, 'i32');
   }
 }
 
 extension ArrayFloat32Ext on Array<Float32> {
   double operator [](int i) {
     return _lib.getValue(_.addr + (i * 4), 'double').toDartDouble;
+  }
+
+  void operator []=(int i, double v) {
+    _lib.setValue(_.addr + (i * 4), v.toJS, 'double');
   }
 }
 
@@ -433,6 +433,9 @@ extension type NativeLibrary(JSObject _) implements JSObject {
   );
   external void _accept_struct_with_array(
     Pointer<StructWithArray> argPtr,
+  );
+  external void _accept_struct_with_struct(
+    Pointer<StructWithStruct> argPtr,
   );
   external void _return_struct_with_array_by_value(
     Pointer<StructWithArray> StructWithArray_out,
@@ -608,6 +611,14 @@ void accept_struct_with_array(
   return result;
 }
 
+void accept_struct_with_struct(
+  StructWithStruct arg,
+) {
+  final argPtr = arg._address;
+  final result = _lib._accept_struct_with_struct(argPtr.cast());
+  return result;
+}
+
 StructWithArray return_struct_with_array_by_value() {
   final StructWithArray_out = StructWithArray.stackAlloc();
   final result =
@@ -720,7 +731,8 @@ extension double3Ext on Pointer<double3> {
 
 final class double3 extends self.Struct {
   double get x {
-    final value = _lib.getValue(this._address + 0, 'double').toDartDouble;
+    final addr = this._address + 0;
+    final value = _lib.getValue(addr, 'double').toDartDouble;
     return value;
   }
 
@@ -729,7 +741,8 @@ final class double3 extends self.Struct {
   }
 
   double get y {
-    final value = _lib.getValue(this._address + 8, 'double').toDartDouble;
+    final addr = this._address + 8;
+    final value = _lib.getValue(addr, 'double').toDartDouble;
     return value;
   }
 
@@ -738,7 +751,8 @@ final class double3 extends self.Struct {
   }
 
   double get z {
-    final value = _lib.getValue(this._address + 16, 'double').toDartDouble;
+    final addr = this._address + 16;
+    final value = _lib.getValue(addr, 'double').toDartDouble;
     return value;
   }
 
@@ -761,7 +775,8 @@ extension MyStructExt on Pointer<MyStruct> {
 
 final class MyStruct extends self.Struct {
   double get a {
-    final value = _lib.getValue(this._address + 0, 'float').toDartDouble;
+    final addr = this._address + 0;
+    final value = _lib.getValue(addr, 'float').toDartDouble;
     return value;
   }
 
@@ -770,7 +785,8 @@ final class MyStruct extends self.Struct {
   }
 
   self.Pointer<Char> get b {
-    final value = _lib.getValue(this._address + 4, '*');
+    final addr = this._address + 4;
+    final value = _lib.getValue(addr, '*');
     return self.Pointer<Char>(value.toDartInt);
   }
 
@@ -779,7 +795,8 @@ final class MyStruct extends self.Struct {
   }
 
   int get c {
-    final value = _lib.getValue(this._address + 8, 'i32').toDartInt;
+    final addr = this._address + 8;
+    final value = _lib.getValue(addr, 'i32').toDartInt;
     return value;
   }
 
@@ -802,7 +819,8 @@ extension StructWithArrayExt on Pointer<StructWithArray> {
 
 final class StructWithArray extends self.Struct {
   Array<Float64> get array1 {
-    final value = _lib.getValue(this._address + 0, '*');
+    final addr = this._address + 0;
+    final value = _lib.getValue(addr, '*');
     return Array<Float64>._(
         (numElements: 2, addr: Pointer<Float64>(this._address + 0)));
   }
@@ -812,7 +830,8 @@ final class StructWithArray extends self.Struct {
   }
 
   Array<Float64> get array2 {
-    final value = _lib.getValue(this._address + 16, '*');
+    final addr = this._address + 16;
+    final value = _lib.getValue(addr, '*');
     return Array<Float64>._(
         (numElements: 3, addr: Pointer<Float64>(this._address + 16)));
   }
@@ -825,6 +844,40 @@ final class StructWithArray extends self.Struct {
 
   static Pointer<StructWithArray> stackAlloc() {
     return Pointer<StructWithArray>(_lib._stackAlloc<StructWithArray>(40));
+  }
+}
+
+extension StructWithStructExt on Pointer<StructWithStruct> {
+  StructWithStruct toDart() {
+    return StructWithStruct(this);
+  }
+}
+
+final class StructWithStruct extends self.Struct {
+  StructWithArray get struct1 {
+    final addr = this._address + 0;
+    final value = _lib.getValue(addr, '*');
+    return StructWithArray(self.Pointer<StructWithArray>(addr));
+  }
+
+  set struct1(StructWithArray val) {
+    _lib.setValue(this._address + 0, val.address.toJS, '*');
+  }
+
+  StructWithArray get struct2 {
+    final addr = this._address + 40;
+    final value = _lib.getValue(addr, '*');
+    return StructWithArray(self.Pointer<StructWithArray>(addr));
+  }
+
+  set struct2(StructWithArray val) {
+    _lib.setValue(this._address + 40, val.address.toJS, '*');
+  }
+
+  StructWithStruct(super._address);
+
+  static Pointer<StructWithStruct> stackAlloc() {
+    return Pointer<StructWithStruct>(_lib._stackAlloc<StructWithStruct>(80));
   }
 }
 
@@ -904,6 +957,8 @@ const int _DARWIN_FEATURE_ONLY_UNIX_CONFORMANCE = 1;
 const int _DARWIN_FEATURE_UNIX_CONFORMANCE = 3;
 
 const int __has_ptrcheck = 0;
+
+const int __has_bounds_safety_attributes = 0;
 
 const int __DARWIN_NULL = 0;
 
@@ -1044,6 +1099,38 @@ const int SIG_ATOMIC_MIN = -2147483648;
 const int SIG_ATOMIC_MAX = 2147483647;
 
 const int __bool_true_false_are_defined = 1;
+
+sealed class Struct extends NativeType {
+  final Pointer _address;
+
+  Struct(this._address);
+
+  static T create<T extends Struct>() {
+    switch (T) {
+      case double3:
+        final ptr = double3.stackAlloc();
+        return ptr.toDart() as T;
+      case MyStruct:
+        final ptr = MyStruct.stackAlloc();
+        return ptr.toDart() as T;
+      case StructWithArray:
+        final ptr = StructWithArray.stackAlloc();
+        return ptr.toDart() as T;
+      case StructWithStruct:
+        final ptr = StructWithStruct.stackAlloc();
+        return ptr.toDart() as T;
+      case MyOpaqueStruct:
+        final ptr = MyOpaqueStruct.stackAlloc();
+        return ptr.toDart() as T;
+      default:
+        throw Exception("Unsupported type: $T");
+    }
+  }
+}
+
+extension StructPointer<T extends Struct> on T {
+  Pointer<T> get address => _address as Pointer<T>;
+}
 
 extension NativeFunctionPointer0<T extends NativeType> on void Function() {
   // orignal type void Function() void Function() dart type void Function()

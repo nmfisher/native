@@ -143,7 +143,7 @@ class Writer {
   void markArray(ConstantArray arr) {
     _arrays.add(arr);
   }
-  
+
   final _nativeFunctions = <FunctionType>{};
   void markNativeFunction(FunctionType func) {
     _nativeFunctions.add(func);
@@ -441,21 +441,6 @@ extension DisposePointerClass<T extends NativeType> on Pointer<NativeFunction> {
   }
 }
 
-sealed class Struct extends NativeType {
-  final Pointer _address;
-
-  Struct(this._address);
-
-  static T create<T extends Struct>() {
-    throw Exception();
-  }
-
-}
-
-extension StructPointer<T extends Struct> on T {
-  Pointer<T> get address => _address as Pointer<T>;
-}
-
 extension type const Array<T extends NativeType>._(
     ({int numElements, Pointer<T> addr}) _) {
   Array<U> cast<U extends NativeType>() => this as Array<U>;
@@ -607,9 +592,38 @@ extension type NativeLibrary(JSObject _) implements JSObject {
       s.write(b.toBindingString(this, writeModuleBinding: false).string);
     }
 
+    s.write('''sealed class Struct extends NativeType {
+  final Pointer _address;
+
+  Struct(this._address);
+
+  static T create<T extends Struct>() {
+    switch(T) {''');
+
+    for (final b in typeBindings) {
+      s.write("");
+      if (b is Compound) {
+        s.write('''case ${b.name}:
+                    final ptr = ${b.name}.stackAlloc();
+                    return ptr.toDart() as T;
+          ''');
+      }
+    }
+
+    s.write('''
+  default:
+    throw Exception("Unsupported type: \$T");
+    } 
+  }
+}
+
+extension StructPointer<T extends Struct> on T {
+  Pointer<T> get address => _address as Pointer<T>;
+}''');
+
     var written = <String>{};
     _nativeFunctions.forEachIndexed((i, fn) {
-      if(written.contains(fn.cacheKey())) {
+      if (written.contains(fn.cacheKey())) {
         return;
       }
       s.write(fn.getExtensionMethod(this, i));

@@ -159,7 +159,7 @@ extension ${name}Ext on Pointer<$name> {
         _ => ''
       };
 
-      String box(String inner) {
+      String box(String inner, String addr) {
         if (m.type is ConstantArray) {
           var arrType = m.type as ConstantArray;
           return '$dartType._((numElements: ${arrType.length}, addr: ${m.type.getInteropDartType(w)}(this._address + $offset)))';
@@ -167,6 +167,8 @@ extension ${name}Ext on Pointer<$name> {
           return '$dartType($inner.toDartInt)';
         } else if (m.type is BooleanType) {
           return '$inner.toDartInt == 1';
+        } else if (m.type is BindingType) {
+          return '${m.type.getInteropDartType(w)}(self.Pointer<${m.type.getInteropDartType(w)}>(addr))';
         }
         return inner;
       }
@@ -176,14 +178,17 @@ extension ${name}Ext on Pointer<$name> {
           return '($inner ? 1 : 0).toJS';
         } else if (m.type is ConstantArray) {
           return '${inner}._.addr.addr.toJS';
+        } else if (m.type is BindingType) {
+          return '${inner}.address.toJS';
         }
         return '$inner.toJS';
       }
 
       s.write('''
 $dartType get $memberName {
-  final value = _lib.getValue(this._address + $offset, '${m.type.llvmType}')$toDart;
-  return ${box('value')};
+  final addr = this._address + $offset;
+  final value = _lib.getValue(addr, '${m.type.llvmType}')$toDart;
+  return ${box('value', 'addr')};
 }
 set $memberName($dartType val) {
   _lib.setValue(this._address + $offset, ${boxJS('val')}, '${m.type.llvmType}');

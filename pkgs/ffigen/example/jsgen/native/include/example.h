@@ -32,6 +32,12 @@ struct StructWithArray {
 };
 typedef struct StructWithArray StructWithArray;
 
+struct StructWithStruct {
+    StructWithArray struct1;
+    StructWithArray struct2;
+};
+typedef struct StructWithStruct StructWithStruct;
+
 typedef int INTTYPE;
 
 void write(int32_t* out);
@@ -58,6 +64,8 @@ int struct_as_argument(double3 vector);
 MyStruct *return_struct_ptr();
 void accept_struct_ptr(MyStruct *arg);
 void accept_struct_with_array(StructWithArray arg);
+void accept_struct_with_struct(StructWithStruct arg);
+
 StructWithArray return_struct_with_array_by_value();
 MyStruct return_struct_by_value(float a, const char *b);
 

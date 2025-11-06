@@ -52,10 +52,13 @@ void main(List<String> args) async {
   struct.a = 20.0;
   struct.b = Pointer<Char>(0 as Pointer<Char>);
   struct.c = 8;
-  
+
   assert(ptr.toDart().a == 20.0, ptr.toDart().a);
 
-  var structArg = double3(ptr)..x = 1.0..y = 2.0..z=3.0;
+  var structArg = double3(ptr)
+    ..x = 1.0
+    ..y = 2.0
+    ..z = 3.0;
   assert(struct_as_argument(structArg) == 6, struct_as_argument(structArg));
 
   accept_struct_ptr(Pointer<Never>(0));
@@ -109,4 +112,41 @@ void main(List<String> args) async {
   assert(done);
 
   print("Function argument completed");
+
+  structWithArray = Struct.create<StructWithArray>();
+  structWithArray.array1[0] = 1.0;
+  structWithArray.array1[1] = 2.0;
+  structWithArray.array2[0] = 4.0;
+  structWithArray.array2[1] = 5.0;
+  structWithArray.array2[2] = 6.0;
+  assert(structWithArray.array1[0] == 1, structWithArray.array1[0]);
+  assert(structWithArray.array1[1] == 2, structWithArray.array1[1]);
+  assert(structWithArray.array2[0] == 4);
+  assert(structWithArray.array2[1] == 5);
+  assert(structWithArray.array2[2] == 6);
+
+  final structWithStruct = Struct.create<StructWithStruct>();
+  // final arr1 = structWithStruct.arr1;
+  structWithStruct.struct1.array1[0] = 1.0;
+  structWithStruct.struct1.array1[1] = 2.0;
+  structWithStruct.struct1.array2[0] = 3.0;
+  structWithStruct.struct1.array2[1] = 4.0;
+  structWithStruct.struct1.array2[2] = 5.0;
+  structWithStruct.struct2.array1[0] = 6.0;
+  structWithStruct.struct2.array1[1] = 7.0;
+  structWithStruct.struct2.array2[0] = 8.0;
+  structWithStruct.struct2.array2[1] = 9.0;
+  structWithStruct.struct2.array2[2] = 10.0;
+  
+
+  assert(structWithStruct.struct1.array1[0] == 1.0, structWithStruct.struct1.array1[0]);
+  assert(structWithStruct.struct1.array1[1] == 2.0, structWithStruct.struct1.array1[1]);
+  assert(structWithStruct.struct1.array2[0] == 3.0, structWithStruct.struct1.array2[0]);
+  assert(structWithStruct.struct1.array2[1] == 4.0, structWithStruct.struct1.array2[1]);
+  assert(structWithStruct.struct1.array2[2] == 5.0, structWithStruct.struct1.array2[2]);
+  assert(structWithStruct.struct2.array1[0] == 6.0, structWithStruct.struct2.array1[0]);
+  assert(structWithStruct.struct2.array1[1] == 7.0, structWithStruct.struct2.array1[1]);
+  assert(structWithStruct.struct2.array2[0] == 8.0, structWithStruct.struct2.array2[0]);
+  assert(structWithStruct.struct2.array2[1] == 9.0, structWithStruct.struct2.array2[1]);
+  assert(structWithStruct.struct2.array2[2] == 10.0, structWithStruct.struct2.array2[2]);
 }
